@@ -1,0 +1,26 @@
+OUTPUT:
+    OUTPUT_DIR: "output/"
+INPUT:
+  GT_FILEPATH: "/cis/net/r22a/data/vshenoy/merl/MMSE_HR_GT/MMSE_HR_processed_all_subjects_missing_face_untested/40_Subjects_GT_all_cases/"
+  TIME_SERIES_FILEPATH: "/cis/net/io72a/data/vshenoy/durr_hand/contrast_rppg_results06-29"
+  TRAIN_JSON_PATH: "/cis/home/vshenoy/durr_hand/timeScale_Ischemia/hand_ischemia/data/contrast06-29_train.json"
+  TEST_JSON_PATH: "/cis/home/vshenoy/durr_hand/timeScale_Ischemia/hand_ischemia/data/contrast06-29_test.json"
+TIME_SCALE_PPG:
+  FPS: 30
+  PASSBAND_FREQ: 36
+  CUTOFF_FREQ: 180
+  NUM_TAPS: 5
+  FRAME_STRIDE: 2.0 #units: seconds
+  FRAME_STRIDE_TEST: 10.0 #units: seconds
+  MIN_WINDOW_SEC: 10.0
+  TIME_WINDOW_SEC: 8.54
+  USE_DENOISER: True
+  CLS_MODEL_TYPE: "SPEC"
+DENOISER:
+  BATCH_SIZE: 100
+  EPOCHS: 1
+  LR: 0.0003
+  WEIGHT_DECAY: 0.0
+TEST:
+  EVAL_PERIOD: 1
+  PLOT_INPUT_OUTPUT: False

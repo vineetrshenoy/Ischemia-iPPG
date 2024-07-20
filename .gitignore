@@ -1,0 +1,9 @@
+hand_ischemia/__pycache__/
+hand_ischemia/config/__pycache__/
+hand_ischemia/data/__pycache__/
+hand_ischemia/engine/__pycache__/
+hand_ischemia/models/__pycache__/
+hand_ischemia/optimizers/__pycache__/
+hand_ischemia/models/timeScaleNetwork/__pycache__/
+output/
+mlruns/
