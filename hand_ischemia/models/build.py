@@ -13,43 +13,14 @@ from hand_ischemia.models.timeScaleNetwork import TiscMlpN
 from hand_ischemia.models.network import ResNetUNet
 from complexPyTorch.complexFunctions import complex_relu
 from complexPyTorch.complexLayers import ComplexReLU, ComplexMaxPool1d, NaiveComplexBatchNorm1d
-
+from hand_ischemia.models import PhysNet
 __all__ = ['build_model']
 
 
-class Denoiser_X(nn.Module):
+class Spectrum_CLS(nn.Module):
 
     def __init__(self):
-        super(Denoiser_X, self).__init__()
-        self.mtype = 'NN'
-        self.layers = nn.Sequential(
-            nn.Conv1d(5, 32, kernel_size=16, stride=2, dtype=torch.cfloat),
-            ComplexReLU(),
-            NaiveComplexBatchNorm1d(32),
-            nn.Conv1d(32, 64, kernel_size=16, stride=2, dtype=torch.cfloat),
-            ComplexReLU(),
-            NaiveComplexBatchNorm1d(64),
-            nn.ConvTranspose1d(64, 32, kernel_size=16,
-                               stride=2, output_padding=1, dtype=torch.cfloat),
-            ComplexReLU(),
-            NaiveComplexBatchNorm1d(32),
-            nn.ConvTranspose1d(32, 5, kernel_size=16,
-                               stride=2, output_padding=1, dtype=torch.cfloat)
-
-        )
-
-    def forward(self, x, **kwargs):
-
-        out = self.layers(x)
-        # Skip connection
-        #out = out + x
-
-        return out
-    
-class Denoiser_cls(nn.Module):
-
-    def __init__(self):
-        super(Denoiser_cls, self).__init__()
+        super(Spectrum_CLS, self).__init__()
         self.mtype = 'NN'
         self.layers = nn.Sequential(
             nn.Conv1d(1, 32, kernel_size=16, stride=2, dtype=torch.cfloat),
@@ -76,24 +47,20 @@ class Denoiser_cls(nn.Module):
         #out = out + x
 
         return out
-        
-
-
-def build_turnip(cfg):
-
-    model = ResNetUNet(window_shrink=0, in_channels=5)
-    return model
 
 
 def build_model(cfg):
 
+    model = PhysNet(2, in_ch=3)
+    
     if cfg.TIME_SCALE_PPG.CLS_MODEL_TYPE == 'TiSc': 
-        network = TiscMlpN([[2,256],100,50,20,10,2], length_input=256, tisc_initialization='white')
+        classifier = TiscMlpN([[2,256],100,50,20,10,2], length_input=256, tisc_initialization='white')
     elif cfg.TIME_SCALE_PPG.CLS_MODEL_TYPE == 'SPEC':
-        network = Denoiser_cls()
+        classifier = Spectrum_CLS()
+        
 
     
-    return network
+    return model, classifier
 
 
 def weights_init(m):

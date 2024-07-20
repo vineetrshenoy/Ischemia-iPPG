@@ -15,7 +15,7 @@ from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, p
 
 from .simple_trainer import SimpleTrainer
 
-from hand_ischemia.models import build_model, build_turnip
+from hand_ischemia.models import build_model
 from hand_ischemia.optimizers import build_optimizer, build_lr_scheduler
 from hand_ischemia.config import get_cfg_defaults
 
@@ -289,25 +289,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 test_dataset, batch_size=1, shuffle=False)
 
             # Build model, optimizer, lr_scheduler
-            cls_model = build_model(self.cfg)
-            cls_model = cls_model.to(self.device)
-
-            denoiser_model = None
-            if self.USE_DENOISER == True:
-                #Build unroll model
-                denoiser_model = build_turnip(self.cfg)
-                ## Load checkpoint if it exists
-                #checkpoint_loc = '/cis/home/vshenoy/durr_hand/ischemia_denoiser/mlruns/740318661192121631/aea070f982334bef8743916c10296a4e/artifacts/modelF009_.pth' #MMSE-HR + ischemia 16 epoch
-                checkpoint_loc = '/cis/home/vshenoy/durr_hand/ischemia_denoiser/mlruns/301926496338550468/0defe21ade704d83a2fe80f3c1abcac5/artifacts/modelF009_.pth' #MMSE-HR + ischemia(5000)
-                #checkpoint_loc = '/cis/home/vshenoy/merl_external/vs_turnip/mlruns/982940363975074181/0e145994fcee432ebc1e790cd1136f8a/artifacts/modelF006_.pth' #Original MMSE-HR
-                try:
-                    checkpoint = torch.load(checkpoint_loc, map_location=self.device)
-                except:
-                    return
-                
-                denoiser_model.load_state_dict(checkpoint['model_state_dict'])
-                denoiser_model = denoiser_model.to(self.device)
-                denoiser_model.eval()
+            model, cls_model = build_model(self.cfg)
+            model, cls_model = model.to(self.device), cls_model.to(self.device)
 
             optimizer = build_optimizer(self.cfg, cls_model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
@@ -364,6 +347,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         #self.subject_cfg = self.get_subject_cfg(test_subject) #Get subject specific config for LR, etc.
         
+        '''
         # Build dataset
         train_dataset = Hand_Ischemia_Dataset(self.cfg, train_list)
         test_dataset = Hand_Ischemia_Dataset_Test(self.cfg, test_list)
@@ -381,27 +365,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             train_dataset, batch_size=self.batch_size, shuffle=True)
         test_dataloader = DataLoader(
             test_dataset, batch_size=1, shuffle=False)
-
+        '''
         # Build model, optimizer, lr_scheduler
-        cls_model = build_model(self.cfg)
-        cls_model = cls_model.to(self.device)
+        model, cls_model = build_model(self.cfg)
+        model, cls_model = model.to(self.device), cls_model.to(self.device)
 
-        denoiser_model = None
-        if self.USE_DENOISER == True:
-            #Build unroll model
-            denoiser_model = build_turnip(self.cfg)
-            ## Load checkpoint if it exists
-            #checkpoint_loc = '/cis/home/vshenoy/durr_hand/ischemia_denoiser/mlruns/740318661192121631/aea070f982334bef8743916c10296a4e/artifacts/modelF009_.pth' #MMSE-HR + ischemia 16 epoch
-            checkpoint_loc = '/cis/home/vshenoy/durr_hand/ischemia_denoiser/mlruns/301926496338550468/0defe21ade704d83a2fe80f3c1abcac5/artifacts/modelF009_.pth' #MMSE-HR + ischemia(5000)
-            #checkpoint_loc = '/cis/home/vshenoy/merl_external/vs_turnip/mlruns/982940363975074181/0e145994fcee432ebc1e790cd1136f8a/artifacts/modelF006_.pth' #Original MMSE-HR
-            try:
-                checkpoint = torch.load(checkpoint_loc, map_location=self.device)
-            except:
-                return
-            
-            denoiser_model.load_state_dict(checkpoint['model_state_dict'])
-            denoiser_model = denoiser_model.to(self.device)
-            denoiser_model.eval()
 
         optimizer = build_optimizer(self.cfg, cls_model)
         lr_scheduler = build_lr_scheduler(self.cfg, optimizer)

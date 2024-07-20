@@ -1,3 +1,4 @@
-from .build import build_model, build_turnip
+from .PhysNetModel import PhysNet
+from .build import build_model
 from .timeScaleNetwork import TiscMlpN
 from .network import ResNetUNet
