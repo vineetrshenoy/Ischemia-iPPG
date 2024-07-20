@@ -15,7 +15,7 @@ from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, p
 
 from .simple_trainer import SimpleTrainer
 
-from hand_ischemia.models import build_model
+from hand_ischemia.models import build_model, CorrelationLoss
 from hand_ischemia.optimizers import build_optimizer, build_lr_scheduler
 from hand_ischemia.config import get_cfg_defaults
 
@@ -45,7 +45,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         self.eval_period = cfg.TEST.EVAL_PERIOD
         self.PLOT_INPUT_OUTPUT = cfg.TEST.PLOT_INPUT_OUTPUT
         self.PLOT_LAST = cfg.TEST.PLOT_LAST
-        self.loss = torch.nn.BCELoss()
+        self.cls_loss = torch.nn.BCELoss()
+        self.regression_loss = CorrelationLoss()
         with open(self.test_json_path, 'r') as f:
             self.ts_list = json.load(f)
         self.eps = 1e-6
@@ -186,11 +187,6 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 ground_truth = ground_truth.to(self.device)
 
                 
-                if self.USE_DENOISER:
-                    #Denoiser
-                    with torch.no_grad():
-                        time_series = denoiser_model(time_series.float()).squeeze()
-                        time_series = time_series.unsqueeze(1)
 
                 if self.CLS_MODEL_TYPE == 'SPEC':
                     if time_series.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
@@ -212,8 +208,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                     time_series = time_series.squeeze().float()
                     out = cls_model(time_series)
                 
-                
-                loss = self.loss(out, ground_truth)
+                #TODO: Add the regression loss here
+                loss = self.cls_loss(out, ground_truth)
                 loss.backward()
                 optimizer.step()
                 
