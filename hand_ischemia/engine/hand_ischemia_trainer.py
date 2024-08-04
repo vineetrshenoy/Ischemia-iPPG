@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 import mlflow
 from sklearn.model_selection import KFold
-from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test
+from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset
 from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _process_ground_truth_window, _evaluate_prediction
 from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, plot_window_post_algo
 
@@ -343,9 +343,12 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         #self.subject_cfg = self.get_subject_cfg(test_subject) #Get subject specific config for LR, etc.
         
-        '''
+        
         # Build dataset
-        train_dataset = Hand_Ischemia_Dataset(self.cfg, train_list)
+        train_dataset = H5Dataset(self.cfg, train_list)
+        test_dataset = H5Dataset(self.cfg, train_list)
+        x = 5
+        '''
         test_dataset = Hand_Ischemia_Dataset_Test(self.cfg, test_list)
         
 
