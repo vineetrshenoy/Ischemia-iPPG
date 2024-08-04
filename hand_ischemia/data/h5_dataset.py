@@ -33,9 +33,11 @@ class H5Dataset(Dataset):
         self.b, self.a = scipy.signal.butter(self.NUM_TAPS, cutoff, btype='bandpass', fs=self.FPS)
         #with open(self.train_json_path, 'r') as f:
         #    self.ts_list = json.load(f)
-        self.ts_time_windows, self.time_window_label = self._get_timeseries(self,
-            data_dict)
-        #self.num_perfuse, self.num_ischemic = Hand_Ischemia_Dataset._count_class_numbers(self.ts_time_windows)
+        self.ts_time_windows, self.time_window_label = self._get_timeseries(self, data_dict)
+        self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
+        
+        #Debug only
+        self.ts_time_windows = self.ts_time_windows[0:1]
         x = 5
     
     @staticmethod
@@ -122,8 +124,22 @@ class H5Dataset(Dataset):
             return ts_time_windows, time_window_label     
                 
     
+    @staticmethod
+    def _count_class_numbers(ts_time_windows):
+        N = len(ts_time_windows)
+        perfuse, ischemic = 0, 0
+        
+        for i in range(0, N):
+            class_labels = ts_time_windows[i][3]
+            if class_labels[0] == 1:
+                perfuse += 1
+            elif class_labels[1] == 1:
+                ischemic += 1
+        
+        return perfuse, ischemic
+    
     def __len__(self):
-        return len(self.train_list)
+        return len(self.ts_time_windows)
 
     def __getitem__(self, idx):
         ts_tuple = self.ts_time_windows[idx]

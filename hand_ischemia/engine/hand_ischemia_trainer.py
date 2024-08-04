@@ -61,7 +61,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
     
     @staticmethod
-    def test_partition(self, cls_model, denoiser_model, optimizer, scheduler, dataloader, epoch):
+    def test_partition(self, model, cls_model, optimizer, scheduler, dataloader, epoch):
         """Evaluating the algorithm on the held-out test subject
 
         Args:
@@ -157,7 +157,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         return X
         
-    def train_partition(self, cls_model, optimizer, scheduler, dataloader, test_dataloader, denoiser_model):
+    def train_partition(self, model, cls_model, optimizer, scheduler, dataloader, test_dataloader):
         """Training the denoiser on all subjects except one held-out test subjection
 
         Args:
@@ -170,7 +170,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         Returns:
             torch.nn.Module, torch.nn.optim, torch.: The neural network modules
         """
-        
+        model.train()
         cls_model.train()
         step = 0
         
@@ -179,18 +179,18 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             logger.info('Training on Epoch {}'.format(i))
             pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
 
-            for iter, (time_series, ground_truth, window_label) in enumerate(dataloader):
+            for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
 
                 #
                 optimizer.zero_grad()
                 time_series = time_series.to(self.device)
-                ground_truth = ground_truth.to(self.device)
+                ground_truth = ground_truth.unsqueeze(1).to(self.device)
 
+                time_series = model(time_series)[:, -1:]
                 
-
+                '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
-                    if time_series.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
-                        time_series = time_series[:, 0:1, :]
+                    
                     ################################################## Pre-processing for complex model
                     L = 10*time_series.shape[2] + 1
                     X = self._adjoint_model(time_series, L)
@@ -207,14 +207,15 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                         time_series = time_series[:, 0:1, :]
                     time_series = time_series.squeeze().float()
                     out = cls_model(time_series)
+                '''
                 
-                #TODO: Add the regression loss here
-                loss = self.cls_loss(out, ground_truth)
+                loss = self.regression_loss(time_series, ground_truth)
+                #loss = self.cls_loss(out, ground_truth)
                 loss.backward()
                 optimizer.step()
                 
                 
-                pred_vector.append(out), gt_vector.append(ground_truth)
+                #pred_vector.append(out), gt_vector.append(ground_truth)
                 
                 metrics = {'loss': loss.detach().cpu().item()}
                 mlflow.log_metrics(metrics, step=step)
@@ -222,7 +223,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 ####
             
             scheduler.step()
-            
+            '''
             #Getting test metrics
             pred_vector, gt_vector = torch.squeeze(torch.cat(pred_vector)), torch.squeeze(torch.cat(gt_vector))
             metrics = self.compute_torchmetrics(pred_vector, gt_vector, i, mode='train')
@@ -234,7 +235,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
                 logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
                 mlflow.log_metrics(met, step=i)
-
+            '''
 
         
         return cls_model, optimizer, scheduler
@@ -348,8 +349,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         train_dataset = H5Dataset(self.cfg, train_list)
         test_dataset = H5Dataset(self.cfg, train_list)
         x = 5
-        '''
-        test_dataset = Hand_Ischemia_Dataset_Test(self.cfg, test_list)
+        
+        #test_dataset = Hand_Ischemia_Dataset_Test(self.cfg, test_list)
         
 
         #Update CFG
@@ -364,7 +365,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             train_dataset, batch_size=self.batch_size, shuffle=True)
         test_dataloader = DataLoader(
             test_dataset, batch_size=1, shuffle=False)
-        '''
+        
         # Build model, optimizer, lr_scheduler
         model, cls_model = build_model(self.cfg)
         model, cls_model = model.to(self.device), cls_model.to(self.device)
@@ -380,8 +381,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         # Train the model
         
-        cls_model, optimizer, lr_scheduler = self.train_partition(
-                cls_model, optimizer, lr_scheduler, train_dataloader, test_dataloader, denoiser_model)
+        cls_model, optimizer, lr_scheduler = self.train_partition(model,
+                cls_model, optimizer, lr_scheduler, train_dataloader, test_dataloader)
         
         logger.warning('Finished training ')
 
