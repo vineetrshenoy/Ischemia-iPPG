@@ -6,21 +6,21 @@ INPUT:
   TRAIN_JSON_PATH: "/cis/home/vshenoy/durr_hand/physnet_ischemia/hand_ischemia/data/physnet_ischemia_train.json"
   TEST_JSON_PATH: "/cis/home/vshenoy/durr_hand/physnet_ischemia/hand_ischemia/data/physnet_ischemia_train.json"
 TIME_SCALE_PPG:
-  FPS: 30
+  FPS: 60
   PASSBAND_FREQ: 36
-  CUTOFF_FREQ: 180
+  CUTOFF_FREQ: 500
   NUM_TAPS: 5
   FRAME_STRIDE: 2.0 #units: seconds
   FRAME_STRIDE_TEST: 10.0 #units: seconds
   MIN_WINDOW_SEC: 10.0
   TIME_WINDOW_SEC: 8.54
   USE_DENOISER: True
-  CLS_MODEL_TYPE: "TiSc"
+  CLS_MODEL_TYPE: "SPEC"
 DENOISER:
   BATCH_SIZE: 1
-  EPOCHS: 1
-  LR: 0.0003
+  EPOCHS: 100
+  LR: 0.001
   WEIGHT_DECAY: 0.0
 TEST:
   EVAL_PERIOD: 1
-  PLOT_INPUT_OUTPUT: False
+  PLOT_INPUT_OUTPUT: True

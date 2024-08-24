@@ -11,7 +11,7 @@ import mlflow
 from sklearn.model_selection import KFold
 from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset
 from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _process_ground_truth_window, _evaluate_prediction
-from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, plot_window_post_algo
+from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, plot_window_post_algo, plot_window_physnet
 
 from .simple_trainer import SimpleTrainer
 
@@ -76,12 +76,14 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         """   
         cls_model.eval()
         pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
-        for iter, (time_series, ground_truth, window_label) in enumerate(dataloader):
+        for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
 
             #
             time_series = time_series.to(self.device)
-            ground_truth = ground_truth.to(self.device)
-            
+            ground_truth = ground_truth.unsqueeze(1).to(self.device)
+
+            denoised_ts = model(time_series)[:, -1:]
+            '''
             if self.USE_DENOISER:
                 #Denoiser
                 with torch.no_grad():
@@ -108,18 +110,22 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                     time_series = time_series[:, 0:1, :]
                 time_series = time_series.squeeze().float()
                 out = cls_model(time_series)
-                
-                
+            '''
+            '''
             pred_class, gt_class = torch.argmax(out), torch.argmax(ground_truth)
             pred_labels.append(pred_class), gt_labels.append(gt_class)
             pred_labels.append(pred_class), gt_labels.append(gt_class)
             pred_vector.append(out), gt_vector.append(ground_truth)
             pred_class = 'ischemic' if pred_class == 1 else 'perfuse'
             gt_class = 'ischemic' if gt_class == 1 else 'perfuse'
+            '''
             if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
                 #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
                 #if iter % 10 == 0: #Plot only every tenth
-                plot_window_post_algo(self.FPS, time_series, denoised_ts, window_label, epoch, gt_class, pred_class)
+                denoised_ts = denoised_ts.detach().cpu().numpy()
+                denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
+                denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
+                plot_window_physnet(self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
             #mlflow.log_metrics(metrics, step=step)
             #step += 1
@@ -185,32 +191,32 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 optimizer.zero_grad()
                 time_series = time_series.to(self.device)
                 ground_truth = ground_truth.unsqueeze(1).to(self.device)
+                cls_label = cls_label.to(self.device)
 
-                time_series = model(time_series)[:, -1:]
+                out = model(time_series)[:, -1:]
+                zero_mean_out = (out - torch.mean(out, axis=2)) / (torch.abs(torch.mean(out, axis=2)) + 1e-6) #AC-DC Normalization
                 
-                '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
                     
                     ################################################## Pre-processing for complex model
-                    L = 10*time_series.shape[2] + 1
-                    X = self._adjoint_model(time_series, L)
+                    L = 10*zero_mean_out.shape[2] + 1
+                    X = self._adjoint_model(zero_mean_out, L)
                     ##################################################
                     #denoised_ts = denoised_ts.unsqueeze(0)
                     #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
                     #outloc = '/cis/net/r22a/data/vshenoy/durr_hand/pre_denoising/{}.jpg'.format(window_label[0])
-                    #plot_window_ts(self.FPS, time_series, denoised_ts, outloc, ground_truth)
+                    #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
-                    out = cls_model(X)
+                    cls_out = cls_model(X)
                 elif self.CLS_MODEL_TYPE == 'TiSc':
-                    if time_series.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
-                        time_series = time_series[:, 0:1, :]
-                    time_series = time_series.squeeze().float()
-                    out = cls_model(time_series)
-                '''
+                    if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
+                        zero_mean_out = zero_mean_out[:, 0:1, :]
+                    zero_mean_out = zero_mean_out.squeeze().float()
+                    cls_out = cls_model(zero_mean_out)
                 
-                loss = self.regression_loss(time_series, ground_truth)
-                #loss = self.cls_loss(out, ground_truth)
+                
+                loss = self.regression_loss(zero_mean_out, ground_truth) #+ self.cls_loss(cls_out, cls_label)
                 loss.backward()
                 optimizer.step()
                 
@@ -289,7 +295,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             model, cls_model = build_model(self.cfg)
             model, cls_model = model.to(self.device), cls_model.to(self.device)
 
-            optimizer = build_optimizer(self.cfg, cls_model)
+            optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Create experiment and log training parameters
@@ -371,7 +377,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         model, cls_model = model.to(self.device), cls_model.to(self.device)
 
 
-        optimizer = build_optimizer(self.cfg, cls_model)
+        optimizer = build_optimizer(self.cfg, model)
         lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
         # Create experiment and log training parameters
@@ -386,9 +392,10 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         logger.warning('Finished training ')
 
+        
         # Test the model
-        met = self.test_partition(self, cls_model, denoiser_model, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
-            
+        met = self.test_partition(self, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+        ''' 
         acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision']
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
         logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
@@ -405,3 +412,4 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         # End the run
         mlflow.end_run()
+        '''

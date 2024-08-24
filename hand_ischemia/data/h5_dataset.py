@@ -8,6 +8,7 @@ import scipy.signal
 #from scipy.signal import butter, filtfilt
 import glob
 from numpy.random import default_rng
+from hand_ischemia.engine import plot_window_gt
 
 
 class H5Dataset(Dataset):
@@ -79,8 +80,10 @@ class H5Dataset(Dataset):
         
 
         with h5py.File(h5_filepath, 'r') as f:
+            
             data_length = np.min([f['imgs'].shape[0], f['bvp'].shape[0]])
             time_series = np.arange(0, data_length)
+            
             while sliding_window_end <= data_length:
 
                 #ppg_mat_window = time_series[sliding_window_start:sliding_window_end, :]
@@ -122,7 +125,31 @@ class H5Dataset(Dataset):
                 window_num += 1
 
             return ts_time_windows, time_window_label     
-                
+    
+    @staticmethod
+    def normalize_filter_gt(self, signal, samp):
+    
+        sig = (signal - np.mean(signal, axis=0)) / (np.abs(np.mean(signal, axis=0)) + 1e-6) #AC-DC Normalization
+        #plot_signal_window(signal, sig)
+        normsig = sig / np.linalg.norm(sig, axis=0)
+        #plot_signal_window(sig, normsig)
+
+
+        N = signal.shape[0]
+        win = scipy.signal.windows.hann(N)
+        winsig = normsig * win
+        #plot_signal_window(normsig, winsig)
+
+        b_low, a_low   = scipy.signal.butter(5, 2.5, 'low', fs=samp) # was 2.5
+        b_high, a_high = scipy.signal.butter(5, 0.7, 'high', fs=samp) # was 0.7
+        filtsig = scipy.signal.filtfilt(b_low, a_low, normsig, axis=0, padtype='odd', padlen=3*(max(len(b_low),1)-1)) # len(a_low) = 1
+        sig = scipy.signal.filtfilt(b_high, a_high, filtsig, axis=0, padtype='odd', padlen=3*(max(len(b_high),len(a_high))-1))
+
+        #B, A = butter(5, [0.7, 2.5], 'bandpass', fs=samp)
+        #sig = filtfilt(B, A, sig, axis=0)
+        
+
+        return sig
     
     @staticmethod
     def _count_class_numbers(ts_time_windows):
@@ -142,17 +169,21 @@ class H5Dataset(Dataset):
         return len(self.ts_time_windows)
 
     def __getitem__(self, idx):
-        ts_tuple = self.ts_time_windows[idx]
-        window_label = self.time_window_label[idx]
+        ts_tuple = self.ts_time_windows[0]
+        window_label = self.time_window_label[0]
         
         filename, idx_start, idx_end = ts_tuple[0], ts_tuple[1], ts_tuple[2]
         cls_label, window_label = ts_tuple[3], ts_tuple[4]
 
         with h5py.File(filename, 'r') as f:
             bvp = f['bvp'][idx_start:idx_end].astype('float32')
+            bvp = H5Dataset.normalize_filter_gt(self, bvp, self.FPS)
+            bvp = torch.from_numpy(bvp.copy())
+            plot_window_gt(self.FPS, bvp, 'temp')
             img_seq = f['imgs'][idx_start:idx_end]
             
         img_seq = np.transpose(img_seq, (3, 0, 1, 2)).astype('float32')
+        img_seq = torch.from_numpy(img_seq.copy())
         return img_seq, bvp, cls_label, window_label
 
 if __name__ == "__main__":
