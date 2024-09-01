@@ -359,7 +359,9 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         # Build dataset
         train_dataset = H5Dataset(self.cfg, train_list)
-        test_dataset = H5Dataset(self.cfg, train_list)
+        test_dataset = H5Dataset(self.cfg, test_list)
+        logger.info('Train dataset size: {}'.format(len(train_dataset)))
+        logger.info('Test dataset size: {}'.format(len(test_dataset)))
         x = 5
         
         #test_dataset = Hand_Ischemia_Dataset_Test(self.cfg, test_list)

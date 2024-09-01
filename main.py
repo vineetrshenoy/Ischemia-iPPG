@@ -38,7 +38,7 @@ def main(rank, args, world_size):
     cfg.merge_from_list(args.opts)
     #cfg.freeze()
 
-    logger = setup_logger(cfg.OUTPUT.OUTPUT_DIR, distributed_rank=0)
+    logger = setup_logger(cfg.OUTPUT.OUTPUT_DIR, distributed_rank=rank)
 
     ddp_setup(rank, world_size)
     # Build model, optimizer, lr_scheduler
