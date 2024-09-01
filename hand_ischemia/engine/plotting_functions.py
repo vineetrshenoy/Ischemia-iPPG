@@ -377,7 +377,9 @@ def plot_window_physnet(fps, gt_sig, proj_sig, win_num, epoch, gt_class, pred_cl
     #os.makedirs(out_dir, exist_ok=True)
     ####Actually plotting
     gt_sig, proj_sig_reg = gt_sig[0, 0,:], proj_sig[0, 0,:]
-    #mse_loss = F.mse_loss(torch.from_numpy(proj_sig_reg), torch.from_numpy(Z_gt))
+    #mse_loss = F.mse_loss(torch.from_numpy(proj_sig_reg), torch.from_numpy(Z_gt))  
+    gt_sig = gt_sig / np.linalg.norm(gt_sig, keepdims=True)
+    proj_sig_reg = proj_sig_reg / np.linalg.norm(proj_sig_reg, keepdims=True)
 
     fig, ax = plt.subplots(2, 2)
     """Plots the ground-truth signal. For debugging purposes only

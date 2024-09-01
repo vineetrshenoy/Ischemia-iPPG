@@ -79,7 +79,19 @@ class SimpleTrainer(object):
 
         return metrics_dict
         
-    
+    def _compute_rmse_and_pte6(self, HR_gt, HR_est):
+        HR_gt = np.array(HR_gt)
+        HR_est = np.array(HR_est)
+        N = len(HR_est)
+
+        rmse = np.sqrt(np.mean(np.square(HR_gt - HR_est)))
+        mae = np.mean(np.abs(HR_gt - HR_est))
+        pte6 = 100 * np.sum(np.where(np.abs(HR_gt - HR_est) < 6, 1.0, 0.0)) / N
+
+       
+        metrics = {'rmse': rmse, 'mae': mae, 'pte6': pte6}
+        
+        return metrics
     
     def _calculate_SNR(self, pred_ppg_signal, hr_label, fs=30, low_pass=0.75, high_pass=2.5):
         

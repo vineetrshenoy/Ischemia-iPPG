@@ -221,7 +221,7 @@ def _frequency_plot_grid(fps, ppg):
     return freq, P_one_sided
 
 
-def _process_ground_truth_window(gt_wave, fps):
+def _evaluate_hr(wave, fps):
     """Generates the ground-truth heart-rate in the window
 
     Args:
@@ -233,12 +233,11 @@ def _process_ground_truth_window(gt_wave, fps):
     """
 
     # AC/DC normalization
-    mean_windowed_pulse_GT = torch.mean(gt_wave, dim=2)
-    windowed_pulse_GT = (
-        gt_wave - mean_windowed_pulse_GT) / (mean_windowed_pulse_GT + 1e-6)
+    
+    windowed_pulse = wave / torch.linalg.norm(wave, dim=2, keepdim=True)
 
     freq_GT, Pk_GT = _frequency_plot_grid(
-        fps, windowed_pulse_GT)
+        fps, windowed_pulse.cpu())
     
     lower_bound = np.greater_equal(freq_GT, 0.6)
     upper_bound = np.less_equal(freq_GT, 2.5)

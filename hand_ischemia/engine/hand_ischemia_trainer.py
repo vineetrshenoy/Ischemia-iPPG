@@ -10,7 +10,7 @@ import numpy as np
 import mlflow
 from sklearn.model_selection import KFold
 from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset
-from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _process_ground_truth_window, _evaluate_prediction
+from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _evaluate_hr, _evaluate_prediction
 from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, plot_window_post_algo, plot_window_physnet
 
 from .simple_trainer import SimpleTrainer
@@ -75,7 +75,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             torch.nn.Module, torch.nn.optim, torch.: The neural network modules
         """   
         cls_model.eval()
-        pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
+        pred_labels, pred_vector, gt_labels, gt_vector, hr_nn, hr_gt = [], [], [], [], [], []
         for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
 
             #
@@ -119,6 +119,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             pred_class = 'ischemic' if pred_class == 1 else 'perfuse'
             gt_class = 'ischemic' if gt_class == 1 else 'perfuse'
             '''
+            pred_hr = _evaluate_hr(denoised_ts.detach(), self.FPS)
+            hr_nn.append(pred_hr)
+            gt_hr =  _evaluate_hr(ground_truth, self.FPS)
+            hr_gt.append(gt_hr)
+            
             if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
                 #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
                 #if iter % 10 == 0: #Plot only every tenth
@@ -131,11 +136,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             #step += 1
             ###
         
-        pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
-        pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
-        metrics = self.compute_torchmetrics(pred_vector, gt_vector, epoch)
-        
-        return metrics        
+        #pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
+        #pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
+        #metrics = self.compute_torchmetrics(pred_vector, gt_vector, epoch)
+        #
+        #return metrics        
         
         
         #model = sparsePPGnn.model
@@ -143,7 +148,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         #scheduler = sparsePPGnn.scheduler
 
         #mSNR = np.mean(snr_arr)
-        #return subject_hr_nn, subject_hr_gt, mSNR
+        return hr_nn, hr_gt
 
 
     def _adjoint_model(self, Y, L):
@@ -394,7 +399,14 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         
         # Test the model
-        met = self.test_partition(self, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+        hr_nn, hr_gt = self.test_partition(self, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+        
+        met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
+        mlflow.log_metrics(met, step=self.epochs)
+        
+        mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
+        logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
+        
         ''' 
         acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision']
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
