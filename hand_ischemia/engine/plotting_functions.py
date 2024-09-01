@@ -424,7 +424,7 @@ def plot_window_physnet(fps, gt_sig, proj_sig, win_num, epoch, gt_class, pred_cl
     #name = '_win{}_epoch{}: GT: {} Pred: {}.jpg'.format(win_num[0], epoch, gt_class, pred_class)
     #mlflow.log_figure(fig, name)
     filename = '{}_gt_{}_pred_{}.jpg'.format(win_num[0], gt_class,pred_class)
-    mlflow.log_figure(fig, filename)
+    #mlflow.log_figure(fig, filename)
     #fig.savefig('temp.jpg')
     plt.close()
 

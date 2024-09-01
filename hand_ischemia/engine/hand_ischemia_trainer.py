@@ -19,6 +19,12 @@ from hand_ischemia.models import build_model, CorrelationLoss
 from hand_ischemia.optimizers import build_optimizer, build_lr_scheduler
 from hand_ischemia.config import get_cfg_defaults
 
+import torch.multiprocessing as mp
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed import init_process_group, destroy_process_group
+import os
+
 
 __all__ = ['Hand_Ischemia_Trainer']
 
@@ -27,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class Hand_Ischemia_Trainer(SimpleTrainer):
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, model, gpu_id):
 
         super(Hand_Ischemia_Trainer, self).__init__(cfg)
         self.cfg = cfg
@@ -51,14 +57,12 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             self.ts_list = json.load(f)
         self.eps = 1e-6
 
-        if torch.cuda.is_available():
-            self.device = torch.device('cuda')
-        else:
-            self.device = torch.device('cpu')
+        self.model = model.to(gpu_id)
+        self.model = DDP(model, device_ids=[gpu_id])
+        self.device = gpu_id
 
         logger.info('Inside Hand_Ischemia_Trainer')
     
-        
     
     @staticmethod
     def test_partition(self, model, cls_model, optimizer, scheduler, dataloader, epoch):
@@ -74,7 +78,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         Returns:
             torch.nn.Module, torch.nn.optim, torch.: The neural network modules
         """   
-        cls_model.eval()
+        #cls_model.eval()
         pred_labels, pred_vector, gt_labels, gt_vector, hr_nn, hr_gt = [], [], [], [], [], []
         for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
 
@@ -182,7 +186,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             torch.nn.Module, torch.nn.optim, torch.: The neural network modules
         """
         model.train()
-        cls_model.train()
+        #cls_model.train()
         step = 0
         
         for i in range(0, self.epochs):
@@ -200,7 +204,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
                 out = model(time_series)[:, -1:]
                 zero_mean_out = (out - torch.mean(out, axis=2)) / (torch.abs(torch.mean(out, axis=2)) + 1e-6) #AC-DC Normalization
-                
+                '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
                     
                     ################################################## Pre-processing for complex model
@@ -219,7 +223,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                         zero_mean_out = zero_mean_out[:, 0:1, :]
                     zero_mean_out = zero_mean_out.squeeze().float()
                     cls_out = cls_model(zero_mean_out)
-                
+                '''
                 
                 loss = self.regression_loss(zero_mean_out, ground_truth) #+ self.cls_loss(cls_out, cls_label)
                 loss.backward()
@@ -229,7 +233,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 #pred_vector.append(out), gt_vector.append(ground_truth)
                 
                 metrics = {'loss': loss.detach().cpu().item()}
-                mlflow.log_metrics(metrics, step=step)
+                #mlflow.log_metrics(metrics, step=step)
                 step += 1
                 ####
             
@@ -295,10 +299,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 train_dataset, batch_size=self.batch_size, shuffle=True)
             test_dataloader = DataLoader(
                 test_dataset, batch_size=1, shuffle=False)
-
-            # Build model, optimizer, lr_scheduler
-            model, cls_model = build_model(self.cfg)
-            model, cls_model = model.to(self.device), cls_model.to(self.device)
+            
 
             optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
@@ -373,40 +374,40 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         # Build dataloader
         train_dataloader = DataLoader(
-            train_dataset, batch_size=self.batch_size, shuffle=True)
+            train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
         test_dataloader = DataLoader(
             test_dataset, batch_size=1, shuffle=False)
         
         # Build model, optimizer, lr_scheduler
-        model, cls_model = build_model(self.cfg)
-        model, cls_model = model.to(self.device), cls_model.to(self.device)
+        #model, cls_model = build_model(self.cfg)
+        #model, cls_model = model.to(self.device), cls_model.to(self.device)
 
 
-        optimizer = build_optimizer(self.cfg, model)
+        optimizer = build_optimizer(self.cfg, self.model)
         lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
         # Create experiment and log training parameters
         
-        mlflow.start_run(experiment_id=experiment_id,nested=True)
-        self.log_config_dict(self.cfg)
+        #mlflow.start_run(experiment_id=experiment_id,nested=True)
+        #self.log_config_dict(self.cfg)
 
         # Train the model
         
-        cls_model, optimizer, lr_scheduler = self.train_partition(model,
-                cls_model, optimizer, lr_scheduler, train_dataloader, test_dataloader)
+        cls_model, optimizer, lr_scheduler = self.train_partition(self.model,
+                None, optimizer, lr_scheduler, train_dataloader, test_dataloader)
         
         logger.warning('Finished training ')
 
         
         # Test the model
-        hr_nn, hr_gt = self.test_partition(self, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+        hr_nn, hr_gt = self.test_partition(self, self.model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
         
         met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
-        mlflow.log_metrics(met, step=self.epochs)
+        #mlflow.log_metrics(met, step=self.epochs)
         
         mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
         logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
-        
+        #mlflow.end_run()
         ''' 
         acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision']
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']

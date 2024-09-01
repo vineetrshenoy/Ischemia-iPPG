@@ -169,8 +169,8 @@ class H5Dataset(Dataset):
         return len(self.ts_time_windows)
 
     def __getitem__(self, idx):
-        ts_tuple = self.ts_time_windows[0]
-        window_label = self.time_window_label[0]
+        ts_tuple = self.ts_time_windows[idx]
+        window_label = self.time_window_label[idx]
         
         filename, idx_start, idx_end = ts_tuple[0], ts_tuple[1], ts_tuple[2]
         cls_label, window_label = ts_tuple[3], ts_tuple[4]
@@ -179,7 +179,7 @@ class H5Dataset(Dataset):
             bvp = f['bvp'][idx_start:idx_end].astype('float32')
             bvp = H5Dataset.normalize_filter_gt(self, bvp, self.FPS)
             bvp = torch.from_numpy(bvp.copy())
-            plot_window_gt(self.FPS, bvp, 'temp')
+            #plot_window_gt(self.FPS, bvp, 'temp')
             img_seq = f['imgs'][idx_start:idx_end]
             
         img_seq = np.transpose(img_seq, (3, 0, 1, 2)).astype('float32')
