@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import numpy as np
-import mlflow
+import wandb
 from sklearn.model_selection import KFold
 from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset
 from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _evaluate_hr, _evaluate_prediction
@@ -29,7 +29,7 @@ import os
 __all__ = ['Hand_Ischemia_Trainer']
 
 logger = logging.getLogger(__name__)
-
+wandb.require("core")
 
 class Hand_Ischemia_Trainer(SimpleTrainer):
 
@@ -172,7 +172,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         return X
         
-    def train_partition(self, model, cls_model, optimizer, scheduler, dataloader, test_dataloader):
+    def train_partition(self, run, model, cls_model, optimizer, scheduler, dataloader, test_dataloader):
         """Training the denoiser on all subjects except one held-out test subjection
 
         Args:
@@ -233,7 +233,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 #pred_vector.append(out), gt_vector.append(ground_truth)
                 
                 metrics = {'loss': loss.detach().cpu().item()}
-                #mlflow.log_metrics(metrics, step=step)
+                run.log(metrics, step=step) if run != None else False
                 step += 1
                 ####
             
@@ -391,11 +391,22 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         # Create experiment and log training parameters
         
         #mlflow.start_run(experiment_id=experiment_id,nested=True)
+        config_dictionary = dict(
+            yaml=self.cfg,
+        )
+        run = None
+        if self.device == 0:
+            run = wandb.init(
+                entity='vshenoy',
+                project='hand_surgeon',
+                config=config_dictionary
+            )
+        
         #self.log_config_dict(self.cfg)
 
         # Train the model
         
-        cls_model, optimizer, lr_scheduler = self.train_partition(self.model,
+        cls_model, optimizer, lr_scheduler = self.train_partition(run, self.model,
                 None, optimizer, lr_scheduler, train_dataloader, test_dataloader)
         
         logger.warning('Finished training ')
@@ -409,7 +420,9 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
         logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
-        #mlflow.end_run()
+        
+        
+        run.finish() if run != None else False
         ''' 
         acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision']
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
