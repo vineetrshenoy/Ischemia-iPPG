@@ -358,7 +358,7 @@ def plot_window_post_algo(fps, org_sig, proj_sig, win_num, epoch, gt_class, pred
     '''
     
 @staticmethod
-def plot_window_physnet(fps, gt_sig, proj_sig, win_num, epoch, gt_class, pred_class):
+def plot_window_physnet(run , fps, gt_sig, proj_sig, win_num, epoch, gt_class, pred_class):
     """Plots the signal and spectrums. Used during test time
 
 
@@ -424,7 +424,8 @@ def plot_window_physnet(fps, gt_sig, proj_sig, win_num, epoch, gt_class, pred_cl
     #name = '_win{}_epoch{}: GT: {} Pred: {}.jpg'.format(win_num[0], epoch, gt_class, pred_class)
     #mlflow.log_figure(fig, name)
     filename = '{}_gt_{}_pred_{}.jpg'.format(win_num[0], gt_class,pred_class)
-    #mlflow.log_figure(fig, filename)
+    mlflow.log_figure(fig, filename)
+    run.log({filename: fig})
     fig.savefig('output/{}.jpg'.format(win_num[0]))
     plt.close()
 

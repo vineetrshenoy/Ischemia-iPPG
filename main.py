@@ -29,7 +29,7 @@ def ddp_setup(rank: int, world_size: int):
 
 
 
-def main(rank, args, world_size):
+def main(rank, args, world_size, experiment_id):
 
     cfg = get_cfg_defaults()  # This is take from torch_SparsePPG/config/config.py
     # overwrite default configs args with those from file
@@ -52,13 +52,15 @@ def main(rank, args, world_size):
     with open(output_config_path, 'w') as f:
         f.write(cfg.dump())
 
-    experiment_id = mlflow.create_experiment(time.strftime("%m-%d-%H:%M:%S"))
     
-    #mlflow.start_run(experiment_id=experiment_id)
+    if rank == 0:
+        mlflow.start_run(experiment_id=experiment_id)
     
     #trainer.train(experiment_id=experiment_id)
     trainer.train_no_val(experiment_id=experiment_id)
-    #mlflow.end_run()
+    
+    if rank == 0:
+        mlflow.end_run()
     destroy_process_group()
 
 if __name__ == '__main__':
@@ -67,5 +69,7 @@ if __name__ == '__main__':
     print("Command Line Args", args)
 
     
+    experiment_id = mlflow.create_experiment(time.strftime("%m-%d-%H:%M:%S"))
     world_size = torch.cuda.device_count()
-    mp.spawn(main, args=(args, world_size), nprocs=world_size)
+    mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
+    #main(0, args, world_size, experiment_id)

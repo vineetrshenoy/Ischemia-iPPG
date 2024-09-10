@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import numpy as np
 import wandb
+import mlflow
 from sklearn.model_selection import KFold
 from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset
 from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _evaluate_hr, _evaluate_prediction
@@ -65,7 +66,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
     
     
     @staticmethod
-    def test_partition(self, model, cls_model, optimizer, scheduler, dataloader, epoch):
+    def test_partition(self, run, model, cls_model, optimizer, scheduler, dataloader, epoch):
         """Evaluating the algorithm on the held-out test subject
 
         Args:
@@ -134,7 +135,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 denoised_ts = denoised_ts.detach().cpu().numpy()
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
-                plot_window_physnet(self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                if self.device == 0:
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
             #mlflow.log_metrics(metrics, step=step)
             #step += 1
@@ -234,6 +236,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 
                 metrics = {'loss': loss.detach().cpu().item()}
                 run.log(metrics, step=step) if run != None else False
+                if self.device == 0:
+                    mlflow.log_metrics(metrics, step=step)
                 step += 1
                 ####
             
@@ -390,7 +394,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         # Create experiment and log training parameters
         
-        #mlflow.start_run(experiment_id=experiment_id,nested=True)
+        
         config_dictionary = dict(
             yaml=self.cfg,
         )
@@ -401,8 +405,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 project='hand_surgeon',
                 config=config_dictionary
             )
-        
-        #self.log_config_dict(self.cfg)
+            mlflow.start_run(experiment_id=experiment_id,nested=True)
+            self.log_config_dict(self.cfg)
 
         # Train the model
         
@@ -413,10 +417,13 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         
         # Test the model
-        hr_nn, hr_gt = self.test_partition(self, self.model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+        hr_nn, hr_gt = self.test_partition(self, run, self.model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
         
         met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
-        #mlflow.log_metrics(met, step=self.epochs)
+        
+        if self.device == 0:
+            mlflow.log_metrics(met, step=self.epochs)
+            mlflow.end_run()
         
         mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
         logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))

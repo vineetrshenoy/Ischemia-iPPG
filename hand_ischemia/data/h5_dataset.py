@@ -38,7 +38,7 @@ class H5Dataset(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        #self.ts_time_windows = self.ts_time_windows[0:1]
+        self.ts_time_windows = self.ts_time_windows[0:500]
         x = 5
     
     @staticmethod
@@ -49,7 +49,7 @@ class H5Dataset(Dataset):
         # Load the json file describing subjects and task
 
         for ts_filename, task_list in ts_list.items():  # Load the gt files
-            subject = ts_filename.split('/')[-1]
+            subject = ts_filename.split('/')[-2]
             #mat = sio.loadmat(ts_filename)
             for key, value in task_list.items():
                 
