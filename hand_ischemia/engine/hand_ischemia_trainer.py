@@ -197,7 +197,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
 
             for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
-
+                logger.info('Fetched data')
                 #
                 optimizer.zero_grad()
                 time_series = time_series.to(self.device)
@@ -303,9 +303,9 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
             # Build dataloader
             train_dataloader = DataLoader(
-                train_dataset, batch_size=self.batch_size, shuffle=True)
-            test_dataloader = DataLoader(
-                val_dataset, batch_size=1, shuffle=False)
+                train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
+            val_dataloader = DataLoader(
+                val_dataset, batch_size=1, sampler=DistributedSampler(val_dataset))
             
 
             optimizer = build_optimizer(self.cfg, self.model)
@@ -329,12 +329,12 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             # Train the model
             
             cls_model, optimizer, lr_scheduler = self.train_partition(run, self.model,
-                None, optimizer, lr_scheduler, train_dataloader, test_dataloader)
+                None, optimizer, lr_scheduler, train_dataloader, val_dataloader)
             
             logger.warning('Finished training ')
 
             # Test the model
-            hr_nn, hr_gt = self.test_partition(self, run, self.model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+            hr_nn, hr_gt = self.test_partition(self, run, self.model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
             
             met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
         
