@@ -7,3 +7,4 @@ hand_ischemia/optimizers/__pycache__/
 hand_ischemia/models/timeScaleNetwork/__pycache__/
 output/
 mlruns/
+wandb/

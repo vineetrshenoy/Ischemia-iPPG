@@ -49,15 +49,20 @@ class H5Dataset(Dataset):
         # Load the json file describing subjects and task
 
         for ts_filename, task_list in ts_list.items():  # Load the gt files
-            subject = ts_filename.split('/')[-2]
+            subject = ts_filename
             #mat = sio.loadmat(ts_filename)
-            for key, value in task_list.items():
-                
-                h5_filepath = os.path.join(ts_filename, key)
-                ts, label = H5Dataset.load_time_windows(self, h5_filepath, subject, value, key)
+            
+            for sub_video, data_files in task_list.items():
+                vname = sub_video.split('/')[-2]
+                subject = '{}-{}'.format(subject, vname)
+            
+                for key, value in data_files.items():
+                    
+                    h5_filepath = os.path.join(sub_video, key)
+                    ts, label = H5Dataset.load_time_windows(self, h5_filepath, subject, value, key)
 
-                ts_time_window += ts
-                time_window_label += label
+                    ts_time_window += ts
+                    time_window_label += label
 
         return ts_time_window, time_window_label
     
