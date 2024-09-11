@@ -10,7 +10,7 @@ import numpy as np
 import wandb
 import mlflow
 from sklearn.model_selection import KFold
-from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset
+from hand_ischemia.data import Hand_Ischemia_Dataset, Hand_Ischemia_Dataset_Test, H5Dataset, H5DatasetTest
 from .evaluation_helpers import separate_by_task, _frequency_plot_grid, _evaluate_hr, _evaluate_prediction
 from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, plot_window_post_algo, plot_window_physnet
 
@@ -363,7 +363,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         # Build dataset
         train_dataset = H5Dataset(self.cfg, train_list)
-        test_dataset = H5Dataset(self.cfg, test_list)
+        test_dataset = H5DatasetTest(self.cfg, test_list)
         logger.info('Train dataset size: {}'.format(len(train_dataset)))
         logger.info('Test dataset size: {}'.format(len(test_dataset)))
         x = 5
