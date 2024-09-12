@@ -38,7 +38,7 @@ class H5Dataset(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        self.ts_time_windows = self.ts_time_windows[0:500]
+        self.ts_time_windows = self.ts_time_windows[0:1]
         x = 5
     
     @staticmethod
@@ -54,12 +54,12 @@ class H5Dataset(Dataset):
             
             for sub_video, data_files in task_list.items():
                 vname = sub_video.split('/')[-2]
-                subject = '{}-{}'.format(subject, vname)
+                subject_vid = '{}-{}'.format(subject, vname)
             
                 for key, value in data_files.items():
                     
                     h5_filepath = os.path.join(sub_video, key)
-                    ts, label = H5Dataset.load_time_windows(self, h5_filepath, subject, value, key)
+                    ts, label = H5Dataset.load_time_windows(self, h5_filepath, subject_vid, value, key)
 
                     ts_time_window += ts
                     time_window_label += label
@@ -219,7 +219,7 @@ class H5DatasetTest(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        #self.ts_time_windows = self.ts_time_windows[0:1]
+        self.ts_time_windows = self.ts_time_windows[0:1]
         x = 5
 
     def __len__(self):

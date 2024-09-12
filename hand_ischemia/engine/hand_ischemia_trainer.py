@@ -197,7 +197,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
 
             for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
-                logger.info('Fetched data')
+                #logger.info('Fetched data')
                 #
                 optimizer.zero_grad()
                 time_series = time_series.to(self.device)
@@ -205,7 +205,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 cls_label = cls_label.to(self.device)
 
                 out = model(time_series)[:, -1:]
-                zero_mean_out = (out - torch.mean(out, axis=2)) / (torch.abs(torch.mean(out, axis=2)) + 1e-6) #AC-DC Normalization
+                zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
                 '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
                     
@@ -301,12 +301,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             self.cfg.INPUT.TEST_PERFUSE = val_dataset.num_perfuse
             #self.PLOT_INPUT_OUTPUT = False
 
-            # Build dataloader
+            ##Build dataloader
             train_dataloader = DataLoader(
                 train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
             val_dataloader = DataLoader(
                 val_dataset, batch_size=1, sampler=DistributedSampler(val_dataset))
-            
 
             optimizer = build_optimizer(self.cfg, self.model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
@@ -367,7 +366,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         with open(self.train_json_path, 'r') as f:
             train_list = json.load(f)
-        with open(self.test_json_path, 'r') as f:
+        with open(self.train_json_path, 'r') as f:
             test_list = json.load(f)
         
         logger.info('Training {} --- Train {} ; Test {}'.format(0, 0, 0))
@@ -392,12 +391,17 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         self.cfg.INPUT.TEST_PERFUSE = test_dataset.num_perfuse
 
 
-        # Build dataloader
+        ## Build dataloader
         train_dataloader = DataLoader(
             train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
         test_dataloader = DataLoader(
             test_dataset, batch_size=1, shuffle=False)
         
+        
+        #train_dataloader = DataLoader(
+        #    train_dataset, batch_size=self.batch_size, shuffle=True)
+        #test_dataloader = DataLoader(
+        #    test_dataset, batch_size=1, shuffle=False)
         # Build model, optimizer, lr_scheduler
         #model, cls_model = build_model(self.cfg)
         #model, cls_model = model.to(self.device), cls_model.to(self.device)
