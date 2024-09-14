@@ -3,8 +3,8 @@ OUTPUT:
 INPUT:
   GT_FILEPATH: "/cis/net/r22a/data/vshenoy/merl/MMSE_HR_GT/MMSE_HR_processed_all_subjects_missing_face_untested/40_Subjects_GT_all_cases/"
   TIME_SERIES_FILEPATH: "/cis/net/r22a/data/vshenoy/merl/time_series_results/biosignals_time_series/unrolled-ippg-time_series/time_series"
-  TRAIN_JSON_PATH: "/cis/home/vshenoy/durr_hand/physnet_ischemia/hand_ischemia/data/physnet_cv_all.json"
-  TEST_JSON_PATH: "/cis/home/vshenoy/durr_hand/physnet_ischemia/hand_ischemia/data/physnet_ischemia_test.json"
+  TRAIN_JSON_PATH: "/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/ubfc_train.json"
+  TEST_JSON_PATH: "/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/ubfc_test.json"
 TIME_SCALE_PPG:
   FPS: 30
   PASSBAND_FREQ: 36
@@ -18,8 +18,8 @@ TIME_SCALE_PPG:
   CLS_MODEL_TYPE: "SPEC"
 DENOISER:
   BATCH_SIZE: 2
-  EPOCHS: 10
-  LR: 0.0001
+  EPOCHS: 5
+  LR: 0.001
   WEIGHT_DECAY: 0.0
 TEST:
   EVAL_PERIOD: 1

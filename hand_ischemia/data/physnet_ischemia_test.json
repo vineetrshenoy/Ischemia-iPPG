@@ -1,7 +1,7 @@
 {   
     "subject6": {
 
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0428/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0428/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
             "finger2-metacarpal.h5": 0,
@@ -20,7 +20,7 @@
             "finger5-proximal.h5": 0
 
         },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0430/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0430/":{
             "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
             "finger3-distal.h5": 0,

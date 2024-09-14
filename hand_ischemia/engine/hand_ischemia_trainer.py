@@ -54,6 +54,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         self.PLOT_LAST = cfg.TEST.PLOT_LAST
         self.cls_loss = torch.nn.BCELoss()
         self.regression_loss = CorrelationLoss()
+        #self.regression_loss = torch.nn.MSELoss()
         with open(self.test_json_path, 'r') as f:
             self.ts_list = json.load(f)
         self.eps = 1e-6
@@ -204,7 +205,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 ground_truth = ground_truth.unsqueeze(1).to(self.device)
                 cls_label = cls_label.to(self.device)
 
-                out = model(time_series)[:, -1:]
+                out = model(time_series.float())[:, -1:]
                 zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
                 '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
@@ -227,14 +228,15 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                     cls_out = cls_model(zero_mean_out)
                 '''
                 
-                loss = self.regression_loss(zero_mean_out, ground_truth) #+ self.cls_loss(cls_out, cls_label)
+                loss = self.regression_loss(zero_mean_out, ground_truth.float()) #+ self.cls_loss(cls_out, cls_label)
                 loss.backward()
                 optimizer.step()
                 
                 
                 #pred_vector.append(out), gt_vector.append(ground_truth)
-                
-                metrics = {'loss': loss.detach().cpu().item()}
+                lr = scheduler.optimizer.param_groups[0]['lr']
+                metrics = {'loss': loss.detach().cpu().item(),
+                           'lr': lr}
                 run.log(metrics, step=step) if run != None else False
                 if self.device == 0:
                     mlflow.log_metrics(metrics, step=step)
@@ -366,7 +368,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         with open(self.train_json_path, 'r') as f:
             train_list = json.load(f)
-        with open(self.train_json_path, 'r') as f:
+        with open(self.test_json_path, 'r') as f:
             test_list = json.load(f)
         
         logger.info('Training {} --- Train {} ; Test {}'.format(0, 0, 0))

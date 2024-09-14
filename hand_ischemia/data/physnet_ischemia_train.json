@@ -1,7 +1,7 @@
 {   
     "subject1":   {
 
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0416/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0416/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
             "finger2-metacarpal.h5": 0,
@@ -20,7 +20,7 @@
             "finger5-proximal.h5": 0
 
         },    
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0417/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0417/":{
             "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
             "finger3-distal.h5": 0,
@@ -40,7 +40,7 @@
     },    
 
     "subject2":{
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0418/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0418/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
             "finger2-metacarpal.h5": 0,
@@ -59,7 +59,7 @@
             "finger5-proximal.h5": 0
 
         },    
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0419/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0419/":{
             "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
@@ -79,7 +79,7 @@
 
     "subject3": {
 
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0421/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0421/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
             "finger2-metacarpal.h5": 0,
@@ -98,7 +98,7 @@
             "finger5-proximal.h5": 0
 
         },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0422/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0422/":{
             "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
@@ -118,7 +118,7 @@
     },
     
     "subject4":{
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0423/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0423/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
             "finger2-metacarpal.h5": 0,
@@ -137,7 +137,7 @@
             "finger5-proximal.h5": 0
 
         },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0424/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0424/":{
             "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
@@ -157,7 +157,7 @@
     
     "subject5": {
 
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0425/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0425/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
             "finger2-metacarpal.h5": 0,
@@ -176,7 +176,7 @@
             "finger5-proximal.h5": 0
 
         },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files/IMG_0426/":{
+        "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0426/":{
             "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
             "finger3-distal.h5": 0,
