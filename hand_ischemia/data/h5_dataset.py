@@ -38,7 +38,7 @@ class H5Dataset(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        #self.ts_time_windows = self.ts_time_windows[0:1]
+        self.ts_time_windows = self.ts_time_windows[0:1500]
         x = 5
     
     @staticmethod
@@ -180,13 +180,15 @@ class H5Dataset(Dataset):
         filename, idx_start, idx_end = ts_tuple[0], ts_tuple[1], ts_tuple[2]
         cls_label, window_label = ts_tuple[3], ts_tuple[4]
 
-        with h5py.File(filename, 'r') as f:
-            bvp = f['bvp'][idx_start:idx_end].astype('float32')
-            bvp = H5Dataset.normalize_filter_gt(self, bvp, self.FPS)
-            bvp = torch.from_numpy(bvp.copy())
-            #plot_window_gt(self.FPS, bvp, 'temp')
-            img_seq = f['imgs'][idx_start:idx_end]
-            
+        try:
+            with h5py.File(filename, 'r') as f:
+                bvp = f['bvp'][idx_start:idx_end].astype('float32')
+                bvp = H5Dataset.normalize_filter_gt(self, bvp, self.FPS)
+                bvp = torch.from_numpy(bvp.copy())
+                #plot_window_gt(self.FPS, bvp, 'temp')
+                img_seq = f['imgs'][idx_start:idx_end]
+        except:
+            raise RuntimeError("unable to handle error")
         img_seq = np.transpose(img_seq, (3, 0, 1, 2)).astype('float32')
         img_seq = torch.from_numpy(img_seq.copy())
         return img_seq, bvp, cls_label, window_label
@@ -232,12 +234,15 @@ class H5DatasetTest(Dataset):
         filename, idx_start, idx_end = ts_tuple[0], ts_tuple[1], ts_tuple[2]
         cls_label, window_label = ts_tuple[3], ts_tuple[4]
 
-        with h5py.File(filename, 'r') as f:
-            bvp = f['bvp'][idx_start:idx_end].astype('float32')
-            bvp = H5Dataset.normalize_filter_gt(self, bvp, self.FPS)
-            bvp = torch.from_numpy(bvp.copy())
-            #plot_window_gt(self.FPS, bvp, 'temp')
-            img_seq = f['imgs'][idx_start:idx_end]
+        try:
+            with h5py.File(filename, 'r') as f:
+                bvp = f['bvp'][idx_start:idx_end].astype('float32')
+                bvp = H5Dataset.normalize_filter_gt(self, bvp, self.FPS)
+                bvp = torch.from_numpy(bvp.copy())
+                #plot_window_gt(self.FPS, bvp, 'temp')
+                img_seq = f['imgs'][idx_start:idx_end]
+        except:
+            raise RuntimeError("unable to handle error")
             
         img_seq = np.transpose(img_seq, (3, 0, 1, 2)).astype('float32')
         img_seq = torch.from_numpy(img_seq.copy())

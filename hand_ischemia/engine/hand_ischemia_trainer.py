@@ -88,7 +88,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             time_series = time_series.to(self.device)
             ground_truth = ground_truth.unsqueeze(1).to(self.device)
 
-            denoised_ts = model(time_series)[:, -1:]
+            denoised_ts = model(time_series.float())[:, -1:]
+            logger.info('Processed test sample {}'.format(window_label))
             '''
             if self.USE_DENOISER:
                 #Denoiser
@@ -137,7 +138,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.device == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                    #plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                    x = 5
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
             #mlflow.log_metrics(metrics, step=step)
             #step += 1
@@ -204,8 +206,9 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 time_series = time_series.to(self.device)
                 ground_truth = ground_truth.unsqueeze(1).to(self.device)
                 cls_label = cls_label.to(self.device)
-
+                #logger.info('Before model')
                 out = model(time_series.float())[:, -1:]
+                #logger.info('After model')
                 zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
                 '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
@@ -271,7 +274,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         with open(self.train_json_path, 'r') as f:
             train_list = json.load(f)
         keys = np.array([*train_list])
-        kf = KFold(6, shuffle=True)
+        kf = KFold(6, shuffle=False)
         # Generates a partition of the data
         for idx, (train, val) in enumerate(kf.split(keys)):
             
@@ -307,7 +310,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             train_dataloader = DataLoader(
                 train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
             val_dataloader = DataLoader(
-                val_dataset, batch_size=1, sampler=DistributedSampler(val_dataset))
+                val_dataset, batch_size=1, shuffle=False)
 
             optimizer = build_optimizer(self.cfg, self.model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
