@@ -271,6 +271,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         with open(self.train_json_path, 'r') as f:
             train_list = json.load(f)
+        with open('/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/ubfc_only.json', 'r') as f:
+            ubfc_dict = json.load(f)
         keys = np.array([*train_list])
         kf = KFold(6, shuffle=False)
         # Generates a partition of the data
@@ -284,9 +286,10 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
             val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
 
+            train_subdict.update(ubfc_dict)
             #if test_subject != 'F017':# or test_subject != 'F023' or test_subject != 'F009':
             #    continue
-            logger.info('Training Fold {}'.format(idx))
+            logger.info('Training Fold {}'.format(keys[val][0].item()))
 
             #self.subject_cfg = self.get_subject_cfg(test_subject) #Get subject specific config for LR, etc.
             
@@ -310,11 +313,15 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             val_dataloader = DataLoader(
                 val_dataset, batch_size=1, shuffle=False)
 
-            optimizer = build_optimizer(self.cfg, self.model)
+
+            model, cls_model = build_model(self.cfg)
+            model = model.to(self.device)
+            model = DDP(model, device_ids=[self.device])
+            optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Create experiment and log training parameters
-            run_name = '{}'.format(keys[val].item())
+            run_name = '{}'.format(keys[val][0].item())
             config_dictionary = dict(yaml=self.cfg)
             run = None
             if self.device == 0:
@@ -330,13 +337,13 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
             # Train the model
             
-            cls_model, optimizer, lr_scheduler = self.train_partition(run, self.model,
+            cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
                 None, optimizer, lr_scheduler, train_dataloader, val_dataloader)
             
             logger.warning('Finished training ')
 
             # Test the model
-            hr_nn, hr_gt = self.test_partition(self, run, self.model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
+            hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
             
             met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
         

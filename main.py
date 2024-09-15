@@ -54,8 +54,8 @@ def main(rank, args, world_size, experiment_id):
     if rank == 0:
         mlflow.start_run(experiment_id=experiment_id)
     
-    #trainer.train(experiment_id=experiment_id)
-    trainer.train_no_val(experiment_id=experiment_id)
+    trainer.train(experiment_id=experiment_id)
+    #trainer.train_no_val(experiment_id=experiment_id)
     
     if rank == 0:
         mlflow.end_run()
