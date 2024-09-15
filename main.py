@@ -41,15 +41,10 @@ def main(rank, args, world_size, experiment_id):
     logger = setup_logger(cfg.OUTPUT.OUTPUT_DIR, distributed_rank=rank)
 
     ddp_setup(rank, world_size)
-    # Build model, optimizer, lr_scheduler
     trainer = Hand_Ischemia_Trainer(cfg, rank)
     # Dump the configuration to file, as well as write the output directory
     logger.info('Dumping configuration')
     os.makedirs(cfg.OUTPUT.OUTPUT_DIR, exist_ok=True)
-    output_config_path = osp.join(cfg.OUTPUT.OUTPUT_DIR, 'config.yaml')
-    with open(output_config_path, 'w') as f:
-        f.write(cfg.dump())
-
     
     if rank == 0:
         mlflow.start_run(experiment_id=experiment_id)

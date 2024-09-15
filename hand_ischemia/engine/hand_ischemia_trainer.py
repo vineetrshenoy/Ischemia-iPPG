@@ -54,9 +54,6 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         self.PLOT_LAST = cfg.TEST.PLOT_LAST
         self.cls_loss = torch.nn.BCELoss()
         self.regression_loss = CorrelationLoss()
-        #self.regression_loss = torch.nn.MSELoss()
-        with open(self.test_json_path, 'r') as f:
-            self.ts_list = json.load(f)
         self.eps = 1e-6
 
         self.device = gpu_id
@@ -198,15 +195,13 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
 
             for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
-                #logger.info('Fetched data')
-                #
+            
                 optimizer.zero_grad()
                 time_series = time_series.to(self.device)
                 ground_truth = ground_truth.unsqueeze(1).to(self.device)
                 cls_label = cls_label.to(self.device)
-                #logger.info('Before model')
+                
                 out = model(time_series.float())[:, -1:]
-                #logger.info('After model')
                 zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
                 '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
@@ -279,26 +274,23 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         for idx, (train, val) in enumerate(kf.split(keys)):
             
             
-            # Generating the one-versus-all partition of subjects for MMSE-HR
+            # Generating the one-versus-all partition of subjects for Hand Surgeon
             train_subjects = keys[train]
             val_subjects = keys[val]
             
             train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
             val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
 
-            train_subdict.update(ubfc_dict)
-            #if test_subject != 'F017':# or test_subject != 'F023' or test_subject != 'F009':
-            #    continue
-            logger.info('Training Fold {}'.format(keys[val][0].item()))
+            # Update training set with UBFC data
+            train_subdict.update(ubfc_dict) 
+            logger.info('Training Fold {}'.format(keys[val][0]))
 
-            #self.subject_cfg = self.get_subject_cfg(test_subject) #Get subject specific config for LR, etc.
             
             # Build dataset
             train_dataset = H5Dataset(self.cfg, train_subdict)
             val_dataset = H5DatasetTest(self.cfg, val_subdict)
             logger.info('Train dataset size: {}'.format(len(train_dataset)))
             logger.info('Test dataset size: {}'.format(len(val_dataset)))
-            x = 5
             
             #Update CFG
             self.cfg.INPUT.TRAIN_ISCHEMIC = train_dataset.num_ischemic
@@ -313,7 +305,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             val_dataloader = DataLoader(
                 val_dataset, batch_size=1, shuffle=False)
 
-
+            #Build the model, optimizer, and scheduler
             model, cls_model = build_model(self.cfg)
             model = model.to(self.device)
             model = DDP(model, device_ids=[self.device])
@@ -321,7 +313,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Create experiment and log training parameters
-            run_name = '{}'.format(keys[val][0].item())
+            run_name = '{}'.format(keys[val][0])
             config_dictionary = dict(yaml=self.cfg)
             run = None
             if self.device == 0:
@@ -336,7 +328,6 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 self.log_config_dict(self.cfg)
 
             # Train the model
-            
             cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
                 None, optimizer, lr_scheduler, train_dataloader, val_dataloader)
             
@@ -345,17 +336,19 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             # Test the model
             hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
             
+            
+            #Compute and log the metrics; finish the run
             met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
-        
             if self.device == 0:
                 mlflow.log_metrics(met, step=self.epochs)
                 mlflow.end_run()
+                run.finish() if run != None else False
             
             mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
             logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
             
             
-            run.finish() if run != None else False
+            
             # Save the Model
             #out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, test_subject)
             #os.makedirs(out_dir, exist_ok=True)
@@ -378,20 +371,13 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             train_list = json.load(f)
         with open(self.test_json_path, 'r') as f:
             test_list = json.load(f)
-        
-        logger.info('Training {} --- Train {} ; Test {}'.format(0, 0, 0))
-
-        #self.subject_cfg = self.get_subject_cfg(test_subject) #Get subject specific config for LR, etc.
-        
+              
         
         # Build dataset
         train_dataset = H5Dataset(self.cfg, train_list)
         test_dataset = H5DatasetTest(self.cfg, test_list)
         logger.info('Train dataset size: {}'.format(len(train_dataset)))
-        logger.info('Test dataset size: {}'.format(len(test_dataset)))
-        x = 5
-        
-        #test_dataset = Hand_Ischemia_Dataset_Test(self.cfg, test_list)
+        logger.info('Test dataset size: {}'.format(len(test_dataset)))        
         
 
         #Update CFG
@@ -408,24 +394,14 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             test_dataset, batch_size=1, shuffle=False)
         
         
-        #train_dataloader = DataLoader(
-        #    train_dataset, batch_size=self.batch_size, shuffle=True)
-        #test_dataloader = DataLoader(
-        #    test_dataset, batch_size=1, shuffle=False)
-        # Build model, optimizer, lr_scheduler
-        #model, cls_model = build_model(self.cfg)
-        #model, cls_model = model.to(self.device), cls_model.to(self.device)
-
+        #Build the model, optimizer, and scheduler
         model, cls_model = build_model(self.cfg)
         model = model.to(self.device)
         model = DDP(model, device_ids=[self.device])
-
         optimizer = build_optimizer(self.cfg, model)
         lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
         # Create experiment and log training parameters
-        
-        
         config_dictionary = dict(
             yaml=self.cfg,
         )
@@ -439,8 +415,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             mlflow.start_run(experiment_id=experiment_id,nested=True)
             self.log_config_dict(self.cfg)
 
-        # Train the model
         
+        # Train the model
         cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
                 None, optimizer, lr_scheduler, train_dataloader, test_dataloader)
         
@@ -450,17 +426,17 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         # Test the model
         hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
         
-        met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
         
+        #Comput eand log the metrics; end the run.
+        met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
         if self.device == 0:
             mlflow.log_metrics(met, step=self.epochs)
             mlflow.end_run()
+            run.finish() if run != None else False
         
         mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
         logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
         
-        
-        run.finish() if run != None else False
         ''' 
         acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision']
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
