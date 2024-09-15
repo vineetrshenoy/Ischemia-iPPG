@@ -34,7 +34,7 @@ wandb.require("core")
 
 class Hand_Ischemia_Trainer(SimpleTrainer):
 
-    def __init__(self, cfg, model, gpu_id):
+    def __init__(self, cfg, gpu_id):
 
         super(Hand_Ischemia_Trainer, self).__init__(cfg)
         self.cfg = cfg
@@ -59,8 +59,6 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             self.ts_list = json.load(f)
         self.eps = 1e-6
 
-        self.model = model.to(gpu_id)
-        self.model = DDP(model, device_ids=[gpu_id])
         self.device = gpu_id
 
         logger.info('Inside Hand_Ischemia_Trainer')
@@ -89,7 +87,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             ground_truth = ground_truth.unsqueeze(1).to(self.device)
 
             denoised_ts = model(time_series.float())[:, -1:]
-            logger.info('Processed test sample {}'.format(window_label))
+            #logger.info('Processed test sample {}'.format(window_label))
             '''
             if self.USE_DENOISER:
                 #Denoiser
@@ -138,7 +136,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.device == 0:
-                    #plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
                     x = 5
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
             #mlflow.log_metrics(metrics, step=step)
@@ -411,8 +409,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         #model, cls_model = build_model(self.cfg)
         #model, cls_model = model.to(self.device), cls_model.to(self.device)
 
+        model, cls_model = build_model(self.cfg)
+        model = model.to(self.device)
+        model = DDP(model, device_ids=[self.device])
 
-        optimizer = build_optimizer(self.cfg, self.model)
+        optimizer = build_optimizer(self.cfg, model)
         lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
         # Create experiment and log training parameters
@@ -433,14 +434,14 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
         # Train the model
         
-        cls_model, optimizer, lr_scheduler = self.train_partition(run, self.model,
+        cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
                 None, optimizer, lr_scheduler, train_dataloader, test_dataloader)
         
         logger.warning('Finished training ')
 
         
         # Test the model
-        hr_nn, hr_gt = self.test_partition(self, run, self.model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
+        hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, lr_scheduler, test_dataloader, self.cfg.DENOISER.EPOCHS)
         
         met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
         

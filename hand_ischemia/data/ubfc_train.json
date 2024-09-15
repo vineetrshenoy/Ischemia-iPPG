@@ -158,7 +158,7 @@
             "39.h5": 0
         } 
     },
-    "subject1":   {
+    "subject40":   {
 
         "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0416/":{
             "finger2-distal.h5": 0,
@@ -198,7 +198,7 @@
         }
     },    
 
-    "subject2":{
+    "subject41":{
         "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0418/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
@@ -236,7 +236,7 @@
         }
     },
 
-    "subject3": {
+    "subject42": {
 
         "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0421/":{
             "finger2-distal.h5": 0,
@@ -276,7 +276,7 @@
 
     },
     
-    "subject4":{
+    "subject43":{
         "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0423/":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
@@ -314,7 +314,7 @@
         }
     },
     
-    "subject5": {
+    "subject44": {
 
         "/cis/net/r22a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0425/":{
             "finger2-distal.h5": 0,
