@@ -343,24 +343,26 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             
             #Compute and log the metrics; finish the run
             met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
-            if self.device == 0:
-                mlflow.log_metrics(met, step=self.epochs)
-                mlflow.end_run()
-                run.finish() if run != None else False
-            
+                        
             mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
             logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
             
                         
-            ### Save the Model
-            #out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, test_subject)
-            #os.makedirs(out_dir, exist_ok=True)
-            #model_name = 'model{}_.pth'.format(test_subject)
-            #
-            #out_path = os.path.join(out_dir, model_name)
-            #torch.save({'model_state_dict': model.state_dict(),
-            #            'optimizer_state_dict': optimizer.state_dict()}, out_path)
-            #mlflow.log_artifacts(out_dir)
+            ## Save the Model
+            out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, test_subject)
+            os.makedirs(out_dir, exist_ok=True)
+            model_name = 'model_{}.pth'.format(test_subject)
+            
+            out_path = os.path.join(out_dir, model_name)
+            torch.save({'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, out_path)
+            mlflow.log_artifacts(out_dir)
+            
+            
+            if self.device == 0:
+                mlflow.log_metrics(met, step=self.epochs)
+                mlflow.end_run()
+                run.finish() if run != None else False
 
 
     def train_no_val(self, experiment_id):
