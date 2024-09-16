@@ -245,14 +245,17 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             pred_vector, gt_vector = torch.squeeze(torch.cat(pred_vector)), torch.squeeze(torch.cat(gt_vector))
             metrics = self.compute_torchmetrics(pred_vector, gt_vector, i, mode='train')
             mlflow.log_metrics(metrics, step=i)
-
-            if i % self.eval_period == 0:
-                met = self.test_partition(self, cls_model, denoiser_model, optimizer, scheduler, test_dataloader, i)
-                acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
-                recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
-                logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
-                mlflow.log_metrics(met, step=i)
             '''
+            if i % self.eval_period == 0:
+                hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, scheduler, test_dataloader, i)
+                #acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
+                #recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
+                #logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
+                met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
+                mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
+                logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
+                mlflow.log_metrics(met, step=i)
+            
 
         
         return cls_model, optimizer, scheduler
@@ -283,7 +286,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
             # Update training set with UBFC data
             train_subdict.update(ubfc_dict) 
-            logger.info('Training Fold {}'.format(keys[val][0]))
+            test_subject = keys[val][0]
+            logger.info('Training Fold {}'.format(test_subject))
 
             
             # Build dataset
@@ -313,7 +317,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Create experiment and log training parameters
-            run_name = '{}'.format(keys[val][0])
+            run_name = '{}'.format(test_subject)
             config_dictionary = dict(yaml=self.cfg)
             run = None
             if self.device == 0:
@@ -339,25 +343,26 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             
             #Compute and log the metrics; finish the run
             met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
+                        
+            mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
+            logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
+            
+                        
+            ## Save the Model
+            out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, test_subject)
+            os.makedirs(out_dir, exist_ok=True)
+            model_name = 'model_{}.pth'.format(test_subject)
+            
+            out_path = os.path.join(out_dir, model_name)
+            torch.save({'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, out_path)
+            mlflow.log_artifacts(out_dir)
+            
+            
             if self.device == 0:
                 mlflow.log_metrics(met, step=self.epochs)
                 mlflow.end_run()
                 run.finish() if run != None else False
-            
-            mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
-            logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
-            
-            
-            
-            # Save the Model
-            #out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, test_subject)
-            #os.makedirs(out_dir, exist_ok=True)
-            #model_name = 'model{}_.pth'.format(test_subject)
-            #
-            #out_path = os.path.join(out_dir, model_name)
-            #torch.save({'model_state_dict': model.state_dict(),
-            #            'optimizer_state_dict': optimizer.state_dict()}, out_path)
-            #mlflow.log_artifacts(out_dir)
 
 
     def train_no_val(self, experiment_id):
