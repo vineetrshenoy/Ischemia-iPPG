@@ -273,6 +273,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             ubfc_dict = json.load(f)
         keys = np.array([*train_list])
         kf = KFold(6, shuffle=False)
+        HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         for idx, (train, val) in enumerate(kf.split(keys)):
             
@@ -341,7 +342,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             # Test the model
             hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
             
-            
+            HR_nn_full = HR_nn_full + hr_nn
+            HR_gt_full = HR_gt_full + hr_gt
             #Compute and log the metrics; finish the run
             met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
                         
@@ -355,7 +357,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             model_name = 'model_{}.pth'.format(test_subject)
             
             out_path = os.path.join(out_dir, model_name)
-            torch.save({'model_state_dict': model.state_dict(),
+            torch.save({'model_state_dict': model.module.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict()}, out_path)
             mlflow.log_artifacts(out_dir)
             
@@ -364,7 +366,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 mlflow.log_metrics(met, step=self.epochs)
                 mlflow.end_run()
                 run.finish() if run != None else False
-
+        
+        metrics = self._compute_rmse_and_pte6(HR_gt_full, HR_nn_full)
+        rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
+        logger.warning('Hand Ischemia Results: MAE =  {}; RMSE = {}; PTE6 = {}'.format( mae, rmse, pte6))
+        mlflow.log_metrics(metrics, step=self.epochs)
 
     def train_no_val(self, experiment_id):
         """The main training loop for the partition trainer

@@ -2,7 +2,7 @@ import os
 import os.path as osp
 import sys
 from hand_ischemia.config import get_cfg_defaults, default_argument_parser, setup_logger
-from hand_ischemia.engine.hand_ischemia_trainer import Hand_Ischemia_Trainer
+from hand_ischemia.engine import Hand_Ischemia_Trainer, Hand_Ischemia_Tester
 from hand_ischemia.models import build_model
 import mlflow
 import time
@@ -14,7 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 import os
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+#mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
 def ddp_setup(rank: int, world_size: int):
     """
@@ -40,6 +40,24 @@ def main(rank, args, world_size, experiment_id):
 
     logger = setup_logger(cfg.OUTPUT.OUTPUT_DIR, distributed_rank=rank)
 
+    if args.test_only:
+        
+        experiment_name = 'TEST-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
+        
+        #Create a new "experiment" to record data
+        exp_id = mlflow.create_experiment(experiment_name)
+        mlflow.start_run(experiment_id=exp_id)
+        tester = Hand_Ischemia_Tester(cfg)
+        
+        logger.info('Inside Tester')
+        #Use old experiment id to retriev runs
+        tester.test(args.experiment_id, exp_id)
+        
+        mlflow.end_run()
+        
+        
+        return
+    
     ddp_setup(rank, world_size)
     trainer = Hand_Ischemia_Trainer(cfg, rank)
     # Dump the configuration to file, as well as write the output directory
@@ -62,7 +80,14 @@ if __name__ == '__main__':
     print("Command Line Args", args)
 
     
-    experiment_id = mlflow.create_experiment(time.strftime("%m-%d-%H:%M:%S"))
     world_size = torch.cuda.device_count()
-    mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
-    #main(0, args, world_size, experiment_id)
+    
+    
+    if args.test_only:
+        #experiment_id = mlflow.create_experiment(time.strftime("%m-%d-%H:%M:%S"))
+        main(0, args, world_size, None)
+        
+    else:
+        experiment_id = mlflow.create_experiment(time.strftime("%m-%d-%H:%M:%S"))
+        mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
+        #main(0, args, world_size, experiment_id)
