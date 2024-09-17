@@ -14,7 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 import os
 
-
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
 def ddp_setup(rank: int, world_size: int):
     """

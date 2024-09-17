@@ -312,6 +312,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             #Build the model, optimizer, and scheduler
             model, cls_model = build_model(self.cfg)
             model = model.to(self.device)
+            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = DDP(model, device_ids=[self.device])
             optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
