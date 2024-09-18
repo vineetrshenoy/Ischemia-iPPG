@@ -14,7 +14,7 @@ def default_argument_parser():
     parser.add_argument("--config-file", default="",
                         metavar="FILE", help="path to config file", required=False)
     parser.add_argument("--test_only", action='store_true')
-    parser.add_argument("--cross_test", action='store_true')
+    parser.add_argument("--test_CV", action='store_true')
     parser.add_argument("--checkpoint", default="",
                         metavar="FILE", help="path to location of checkpoint", required=False)
     parser.add_argument("--experiment_id", type=str)

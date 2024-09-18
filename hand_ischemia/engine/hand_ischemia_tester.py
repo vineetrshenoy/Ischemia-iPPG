@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Hand_Ischemia_Tester(SimpleTrainer):
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, args):
 
         super(Hand_Ischemia_Tester, self).__init__(cfg)
         self.cfg = cfg
@@ -39,7 +39,9 @@ class Hand_Ischemia_Tester(SimpleTrainer):
         self.eval_period = cfg.TEST.EVAL_PERIOD
         self.PLOT_INPUT_OUTPUT = cfg.TEST.PLOT_INPUT_OUTPUT
         self.PLOT_LAST = cfg.TEST.PLOT_LAST
+        self.TEST_CV = args.test_CV
         self.eps = 1e-6
+        self.rank = 0
 
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
@@ -57,8 +59,8 @@ class Hand_Ischemia_Tester(SimpleTrainer):
         Args:
             experiment_id (_type_): The MLFlow experiment ID under which to list training runs
         """
-        with open(self.train_json_path, 'r') as f:
-            train_list = json.load(f)
+        with open(self.test_json_path, 'r') as f:
+            test_list = json.load(f)
 
         HR_nn_full, HR_gt_full = [], []
         sub_experiments = mlflow.search_runs([experiment_id], output_format='list')
@@ -70,7 +72,9 @@ class Hand_Ischemia_Tester(SimpleTrainer):
             if test_subject.split('-')[0] != 'hand':
                 continue            
             
-            val_subdict = {test_subject: train_list[test_subject]}
+            val_subdict = test_list
+            if self.TEST_CV:
+                val_subdict = {test_subject: test_list[test_subject]}
             
             #if test_subject != 'F018':
             #    continue
