@@ -47,7 +47,7 @@ def main(rank, args, world_size, experiment_id):
         #Create a new "experiment" to record data
         exp_id = mlflow.create_experiment(experiment_name)
         mlflow.start_run(experiment_id=exp_id)
-        tester = Hand_Ischemia_Tester(cfg)
+        tester = Hand_Ischemia_Tester(cfg, args)
         
         logger.info('Inside Tester')
         #Use old experiment id to retriev runs

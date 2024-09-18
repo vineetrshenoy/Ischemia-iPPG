@@ -56,7 +56,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         self.regression_loss = CorrelationLoss()
         self.eps = 1e-6
 
-        self.device = gpu_id
+        self.rank = gpu_id
 
         logger.info('Inside Hand_Ischemia_Trainer')
     
@@ -80,8 +80,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
 
             #
-            time_series = time_series.to(self.device)
-            ground_truth = ground_truth.unsqueeze(1).to(self.device)
+            time_series = time_series.to(self.rank)
+            ground_truth = ground_truth.unsqueeze(1).to(self.rank)
 
             denoised_ts = model(time_series.float())[:, -1:]
             #logger.info('Processed test sample {}'.format(window_label))
@@ -132,7 +132,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 denoised_ts = denoised_ts.detach().cpu().numpy()
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
-                if self.device == 0:
+                if self.rank == 0:
                     plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
                     x = 5
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
@@ -166,7 +166,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             torch.Tensor: Tensor representing the application of the adjoint model
         """
         X = torch.fft.rfft(Y, n=L, axis=2) * \
-            (1 / torch.sqrt(torch.Tensor([L])).to(self.device))
+            (1 / torch.sqrt(torch.Tensor([L])).to(self.rank))
         X = X[:, :, 0: (L//2) + 1].to(torch.cfloat)
 
 
@@ -197,9 +197,9 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
             
                 optimizer.zero_grad()
-                time_series = time_series.to(self.device)
-                ground_truth = ground_truth.unsqueeze(1).to(self.device)
-                cls_label = cls_label.to(self.device)
+                time_series = time_series.to(self.rank)
+                ground_truth = ground_truth.unsqueeze(1).to(self.rank)
+                cls_label = cls_label.to(self.rank)
                 
                 out = model(time_series.float())[:, -1:]
                 zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
@@ -234,7 +234,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 metrics = {'loss': loss.detach().cpu().item(),
                            'lr': lr}
                 run.log(metrics, step=step) if run != None else False
-                if self.device == 0:
+                if self.rank == 0:
                     mlflow.log_metrics(metrics, step=step)
                 step += 1
                 ####
@@ -312,9 +312,9 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
 
             #Build the model, optimizer, and scheduler
             model, cls_model = build_model(self.cfg)
-            model = model.to(self.device)
+            model = model.to(self.rank)
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-            model = DDP(model, device_ids=[self.device])
+            model = DDP(model, device_ids=[self.rank])
             optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
@@ -322,7 +322,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             run_name = '{}'.format(test_subject)
             config_dictionary = dict(yaml=self.cfg)
             run = None
-            if self.device == 0:
+            if self.rank == 0:
                 run = wandb.init(
                     entity='vshenoy',
                     project='hand_surgeon',
@@ -362,7 +362,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             mlflow.log_artifacts(out_dir)
             
             
-            if self.device == 0:
+            if self.rank == 0:
                 mlflow.log_metrics(met, step=self.epochs)
                 mlflow.end_run()
                 run.finish() if run != None else False
@@ -408,8 +408,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         #Build the model, optimizer, and scheduler
         model, cls_model = build_model(self.cfg)
-        model = model.to(self.device)
-        model = DDP(model, device_ids=[self.device])
+        model = model.to(self.rank)
+        model = DDP(model, device_ids=[self.rank])
         optimizer = build_optimizer(self.cfg, model)
         lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
@@ -418,7 +418,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             yaml=self.cfg,
         )
         run = None
-        if self.device == 0:
+        if self.rank == 0:
             run = wandb.init(
                 entity='vshenoy',
                 project='hand_surgeon',
@@ -441,7 +441,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         
         #Comput eand log the metrics; end the run.
         met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
-        if self.device == 0:
+        if self.rank == 0:
             mlflow.log_metrics(met, step=self.epochs)
             mlflow.end_run()
             run.finish() if run != None else False
