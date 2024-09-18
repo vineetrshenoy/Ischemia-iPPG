@@ -62,6 +62,7 @@ class Hand_Ischemia_Tester(SimpleTrainer):
 
         HR_nn_full, HR_gt_full = [], []
         sub_experiments = mlflow.search_runs([experiment_id], output_format='list')
+        
         # Generates a partition of the data
         for sub_exp in sub_experiments:
             
