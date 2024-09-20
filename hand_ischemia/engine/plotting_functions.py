@@ -335,7 +335,7 @@ def plot_window_post_algo(fps, org_sig, proj_sig, win_num, epoch, gt_class, pred
 
     
     
-    fig.suptitle('Name: {}; GT {}; Pred: {}'.format(win_num[0], gt_class, pred_class))
+    fig.suptitle('{}; \n GT {}; Pred: {}'.format(win_num[0], gt_class, pred_class))
     fig.tight_layout()
     #name = '_win{}_epoch{}: GT: {} Pred: {}.jpg'.format(win_num[0], epoch, gt_class, pred_class)
     #mlflow.log_figure(fig, name)
