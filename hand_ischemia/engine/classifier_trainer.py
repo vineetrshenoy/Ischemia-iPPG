@@ -74,56 +74,39 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         Returns:
             torch.nn.Module, torch.nn.optim, torch.: The neural network modules
         """   
-        #cls_model.eval()
+        cls_model.eval()
         pred_labels, pred_vector, gt_labels, gt_vector, hr_nn, hr_gt = [], [], [], [], [], []
         for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
-
-            #
+                
+                
+            optimizer.zero_grad()
             time_series = time_series.to(self.rank)
             ground_truth = ground_truth.unsqueeze(1).to(self.rank)
-
-            denoised_ts = model(time_series.float())[:, -1:]
-            #logger.info('Processed test sample {}'.format(window_label))
-            '''
-            if self.USE_DENOISER:
-                #Denoiser
-                with torch.no_grad():
-                    time_series = denoiser_model(time_series.float()).T
-                    time_series = time_series.unsqueeze(1)
-
+            cls_label = cls_label.to(self.rank)
+            
+            with torch.no_grad():
+                out = model(time_series.float())[:, -1:]
+                zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
+            
             if self.CLS_MODEL_TYPE == 'SPEC':
-                if time_series.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
-                    time_series = time_series[:, 0:1, :]
+                
                 ################################################## Pre-processing for complex model
-                L = 10*time_series.shape[2] + 1
-                X = self._adjoint_model(time_series, L)
+                L = 10*zero_mean_out.shape[2] + 1
+                X = self._adjoint_model(zero_mean_out, L)
                 ##################################################
                 #denoised_ts = denoised_ts.unsqueeze(0)
                 #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
                 #outloc = '/cis/net/r22a/data/vshenoy/durr_hand/pre_denoising/{}.jpg'.format(window_label[0])
-                #plot_window_ts(self.FPS, time_series, denoised_ts, outloc, ground_truth)
+                #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                 # Running the algorithm
-                out = cls_model(X)
+                cls_out = cls_model(X)
             
             elif self.CLS_MODEL_TYPE == 'TiSc':
-                if time_series.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
-                    time_series = time_series[:, 0:1, :]
-                time_series = time_series.squeeze().float()
-                out = cls_model(time_series)
-            '''
-            '''
-            pred_class, gt_class = torch.argmax(out), torch.argmax(ground_truth)
-            pred_labels.append(pred_class), gt_labels.append(gt_class)
-            pred_labels.append(pred_class), gt_labels.append(gt_class)
-            pred_vector.append(out), gt_vector.append(ground_truth)
-            pred_class = 'ischemic' if pred_class == 1 else 'perfuse'
-            gt_class = 'ischemic' if gt_class == 1 else 'perfuse'
-            '''
-            pred_hr = _evaluate_hr(denoised_ts.detach(), self.FPS)
-            hr_nn.append(pred_hr)
-            gt_hr =  _evaluate_hr(ground_truth, self.FPS)
-            hr_gt.append(gt_hr)
+                if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
+                    zero_mean_out = zero_mean_out[:, 0:1, :]
+                zero_mean_out = zero_mean_out.squeeze().float()
+                cls_out = cls_model(zero_mean_out)
             
             if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
                 #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
@@ -134,9 +117,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 if self.rank == 0:
                     plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
                     x = 5
-            #metrics = {'denoiser_loss': loss.detach().cpu().item()}
-            #mlflow.log_metrics(metrics, step=step)
-            #step += 1
+            
             ###
         
         #pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
@@ -249,7 +230,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             mlflow.log_metrics(metrics, step=i)
             '''
             if i % self.eval_period == 0:
-                hr_nn, hr_gt = self.test_partition(self, run, model, None, optimizer, scheduler, test_dataloader, i)
+                hr_nn, hr_gt = self.test_partition(self, run, model, cls_model, optimizer, scheduler, test_dataloader, i)
                 #acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
                 #recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
                 #logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
@@ -280,15 +261,13 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         tourniquet_keys = np.array([*tourniquet_list])
 
         HR_nn_full, HR_gt_full = [], []
-        sub_experiments = mlflow.search_runs([experiment_id], output_format='list')
+
         
         kf = KFold(6, shuffle=False)
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         for idx, (train, val) in enumerate(kf.split(keys)):
             
-            val_idx = val[0]
-            sub_exp = sub_experiments[val_idx]
             # Generating the one-versus-all partition of subjects for Hand Surgeon
             train_subjects = keys[train]
             val_subjects = keys[val]
@@ -297,9 +276,11 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             train_tourniquet = tourniquet_keys[train]
             val_tourniquet = tourniquet_keys[val]
             
-            test_subject = sub_exp.data.tags['mlflow.runName']
-            if test_subject.split('-')[0] != 'hand':
-                continue            
+            
+            query = "tag.mlflow.runName = '{}'".format(val_subject)
+            sub_exp = mlflow.search_runs([experiment_id], filter_string=query, output_format='list')[0]
+        
+                        
                         
             # Generating the one-versus-all partition of subjects for Hand Surgeon
             train_subjects = keys[train]
@@ -319,12 +300,12 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             # Build model
             model, cls_model = build_model(self.cfg)
             model, cls_model  = model.to(self.rank), cls_model.to(self.rank)
-            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-            cls_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(cls_model)
+            #model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            #cls_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(cls_model)
             
             # Load checkpoint if it exists
             artifact_loc = sub_exp.info.artifact_uri.replace('file://', '')
-            checkpoint_loc = os.path.join(artifact_loc, 'model_{}.pth'.format(test_subject))
+            checkpoint_loc = os.path.join(artifact_loc, 'model_{}.pth'.format(val_subject))
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
                 model.load_state_dict(checkpoint['model_state_dict'])
@@ -332,13 +313,13 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 raise Exception
             
             #Send the model to DDP
-            model, cls_model = model.to(self.rank), cls_model.to(self.rank)
+            #model, cls_model = model.to(self.rank), cls_model.to(self.rank)
             #model, cls_model = DDP(model, device_ids=[self.rank]), DDP(cls_model, device_ids=[self.rank])
             
             #Build the optimizer, lr_scheduler
             optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
-            logger.info('Training model {}'.format(test_subject))
+            logger.info('Training model {}'.format(val_subject))
 
             # Build dataset
             train_dataset = H5Dataset(self.cfg, train_subdict)
@@ -349,12 +330,12 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             
             ## Build dataloader
             train_dataloader = DataLoader(
-                train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
+                train_dataset, batch_size=self.batch_size, shuffle=True)
             test_dataloader = DataLoader(
                 val_dataset, batch_size=1, shuffle=False)
             
             # Create experiment and log training parameters
-            run_name = '{}'.format(test_subject)
+            run_name = '{}'.format(val_subject)
             mlflow.start_run(experiment_id=curr_exp_id,
                              run_name=run_name, nested=True)
 
@@ -383,7 +364,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             
             metrics = self._compute_rmse_and_pte6(HR_gt, HR_nn)
             rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
-            logger.warning('Hand Ischemia results Subject {}: MAE =  {}; RMSE = {}; PTE6 = {}'.format(test_subject,  mae, rmse, pte6))
+            logger.warning('Hand Ischemia results Subject {}: MAE =  {}; RMSE = {}; PTE6 = {}'.format(val_subject,  mae, rmse, pte6))
     
             mlflow.log_metrics(metrics, step=self.epochs)
             '''
