@@ -38,7 +38,7 @@ class H5Dataset(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        self.ts_time_windows = self.ts_time_windows[0:1]
+        self.ts_time_windows = self.ts_time_windows[0:2]
         x = 5
     
     @staticmethod
@@ -221,7 +221,7 @@ class H5DatasetTest(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        self.ts_time_windows = self.ts_time_windows[0:1]
+        self.ts_time_windows = self.ts_time_windows[0:2]
         x = 5
 
     def __len__(self):

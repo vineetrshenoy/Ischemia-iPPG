@@ -79,7 +79,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
                 
                 
-            optimizer.zero_grad()
+            
             time_series = time_series.to(self.rank)
             ground_truth = ground_truth.unsqueeze(1).to(self.rank)
             cls_label = cls_label.to(self.rank)
@@ -88,53 +88,52 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 out = model(time_series.float())[:, -1:]
                 zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
             
-            if self.CLS_MODEL_TYPE == 'SPEC':
-                
-                ################################################## Pre-processing for complex model
-                L = 10*zero_mean_out.shape[2] + 1
-                X = self._adjoint_model(zero_mean_out, L)
-                ##################################################
-                #denoised_ts = denoised_ts.unsqueeze(0)
-                #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
-                #outloc = '/cis/net/r22a/data/vshenoy/durr_hand/pre_denoising/{}.jpg'.format(window_label[0])
-                #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
+                if self.CLS_MODEL_TYPE == 'SPEC':
+                    
+                    ################################################## Pre-processing for complex model
+                    L = 10*zero_mean_out.shape[2] + 1
+                    X = self._adjoint_model(zero_mean_out, L)
+                    ##################################################
+                    #denoised_ts = denoised_ts.unsqueeze(0)
+                    #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
+                    #outloc = '/cis/net/r22a/data/vshenoy/durr_hand/pre_denoising/{}.jpg'.format(window_label[0])
+                    #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
-                # Running the algorithm
-                cls_out = cls_model(X)
+                    # Running the algorithm
+                    cls_out = cls_model(X)
+                
+                elif self.CLS_MODEL_TYPE == 'TiSc':
+                    if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
+                        zero_mean_out = zero_mean_out[:, 0:1, :]
+                    zero_mean_out = zero_mean_out.squeeze().float()
+                    cls_out = cls_model(zero_mean_out)
             
-            elif self.CLS_MODEL_TYPE == 'TiSc':
-                if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
-                    zero_mean_out = zero_mean_out[:, 0:1, :]
-                zero_mean_out = zero_mean_out.squeeze().float()
-                cls_out = cls_model(zero_mean_out)
+            
+            
+            pred_class, gt_class = torch.argmax(cls_out), torch.argmax(cls_label)
+            pred_labels.append(pred_class), gt_labels.append(gt_class)
+            pred_vector.append(cls_out), gt_vector.append(cls_label)
+            pred_class = 'ischemic' if pred_class == 1 else 'perfuse'
+            gt_class = 'ischemic' if gt_class == 1 else 'perfuse'
             
             if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
                 #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
                 #if iter % 10 == 0: #Plot only every tenth
-                denoised_ts = denoised_ts.detach().cpu().numpy()
+                denoised_ts = zero_mean_out.detach().cpu().numpy()
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.rank == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class)
                     x = 5
             
             ###
         
-        #pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
-        #pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
-        #metrics = self.compute_torchmetrics(pred_vector, gt_vector, epoch)
+        pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
+        pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
+        metrics = self.compute_torchmetrics(pred_vector, gt_vector, epoch)
         #
-        #return metrics        
+        return metrics        
         
-        
-        #model = sparsePPGnn.model
-        #optimizer = sparsePPGnn.optimizer
-        #scheduler = sparsePPGnn.scheduler
-
-        #mSNR = np.mean(snr_arr)
-        return hr_nn, hr_gt
-
-
     def _adjoint_model(self, Y, L):
         """Applies the adjoint model. Calculates the gradients
 
@@ -198,7 +197,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
-                    cls_out = cls_model(X)
+                    cls_out = cls_model(X).squeeze()
                 
                 elif self.CLS_MODEL_TYPE == 'TiSc':
                     if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
@@ -230,15 +229,15 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             mlflow.log_metrics(metrics, step=i)
             '''
             if i % self.eval_period == 0:
-                hr_nn, hr_gt = self.test_partition(self, run, model, cls_model, optimizer, scheduler, test_dataloader, i)
-                #acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
-                #recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
-                #logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
-                met = self._compute_rmse_and_pte6(hr_gt, hr_nn)
-                mae, rmse, pte6 =  met['mae'], met['rmse'], met['pte6']
-                logger.warning('RESULTS: MAE={}; RMSE={}; PTE6={}'.format(mae, rmse, pte6))
+                met = self.test_partition(self, run, model, cls_model, optimizer, scheduler, test_dataloader, i)
+                
+                acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
+                recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
+                logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
                 mlflow.log_metrics(met, step=i)
-            
+                
+                
+                cls_model.train()
 
         
         return cls_model, optimizer, scheduler
@@ -317,7 +316,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             #model, cls_model = DDP(model, device_ids=[self.rank]), DDP(cls_model, device_ids=[self.rank])
             
             #Build the optimizer, lr_scheduler
-            optimizer = build_optimizer(self.cfg, model)
+            optimizer = build_optimizer(self.cfg, cls_model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
             logger.info('Training model {}'.format(val_subject))
 
@@ -336,9 +335,6 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             
             # Create experiment and log training parameters
             run_name = '{}'.format(val_subject)
-            mlflow.start_run(experiment_id=curr_exp_id,
-                             run_name=run_name, nested=True)
-
             # Create experiment and log training parameters
             config_dictionary = dict(
                 yaml=self.cfg,
@@ -350,7 +346,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     project='hand_surgeon',
                     config=config_dictionary
                 )
-                mlflow.start_run(experiment_id=experiment_id,nested=True)
+                mlflow.start_run(experiment_id=curr_exp_id, run_name=run_name, nested=True)
                 self.log_config_dict(self.cfg)
 
             
@@ -358,22 +354,20 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             # Train the model
             cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
                     cls_model, optimizer, lr_scheduler, train_dataloader, test_dataloader)
-            '''
-            HR_nn_full = HR_nn_full + HR_nn
-            HR_gt_full = HR_gt_full + HR_gt
             
-            metrics = self._compute_rmse_and_pte6(HR_gt, HR_nn)
-            rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
-            logger.warning('Hand Ischemia results Subject {}: MAE =  {}; RMSE = {}; PTE6 = {}'.format(val_subject,  mae, rmse, pte6))
-    
-            mlflow.log_metrics(metrics, step=self.epochs)
-            '''
+            
+            #Test the model
+            met = self.test_partition(self, run, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.epochs)    
+            acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
+            recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
+            logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
+            mlflow.log_metrics(met, step=self.epochs)
 
 
             # End the run
             mlflow.end_run()
 
-        metrics = self._compute_rmse_and_pte6(HR_gt_full, HR_nn_full)
-        rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
-        logger.warning('Hand Ischemia Results: MAE =  {}; RMSE = {}; PTE6 = {}'.format( mae, rmse, pte6))
-        mlflow.log_metrics(metrics, step=self.epochs)
+        #metrics = self._compute_rmse_and_pte6(HR_gt_full, HR_nn_full)
+        #rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
+        #logger.warning('Hand Ischemia Results: MAE =  {}; RMSE = {}; PTE6 = {}'.format( mae, rmse, pte6))
+        #mlflow.log_metrics(metrics, step=self.epochs)
