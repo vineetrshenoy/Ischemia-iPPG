@@ -322,7 +322,8 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
 
             # Build dataset
             train_dataset = H5Dataset(self.cfg, train_subdict)
-            val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            #val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            val_dataset = H5Dataset(self.cfg, train_subdict)
             logger.info('Train dataset size: {}'.format(len(train_dataset)))
             logger.info('Test dataset size: {}'.format(len(val_dataset)))
 
