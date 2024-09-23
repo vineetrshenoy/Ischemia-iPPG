@@ -381,6 +381,17 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
             mlflow.log_metrics(met, step=self.epochs)
 
+            
+            ## Save the Model
+            out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, val_subject)
+            os.makedirs(out_dir, exist_ok=True)
+            model_name = 'clsmodel_{}.pth'.format(val_subject)
+            
+            out_path = os.path.join(out_dir, model_name)
+            torch.save({'model_state_dict': cls_model.module.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, out_path)
+            mlflow.log_artifacts(out_dir)
+
 
             # End the run
             mlflow.end_run()
