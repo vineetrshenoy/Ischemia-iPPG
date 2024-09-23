@@ -100,7 +100,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
-                    cls_out = cls_model(X)
+                    cls_out = cls_model(X).unsqueeze(0)
                 
                 elif self.CLS_MODEL_TYPE == 'TiSc':
                     if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
@@ -108,7 +108,9 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     zero_mean_out = zero_mean_out.squeeze().float()
                     cls_out = cls_model(zero_mean_out)
             
-            
+            #logger.info('out shape{} ; label shape {}'.format(cls_out.shape, cls_label.shape))
+            loss = self.cls_loss(cls_out, cls_label)
+            test_loss.append(loss.detach().cpu().numpy().item())
             
             pred_class, gt_class = torch.argmax(cls_out), torch.argmax(cls_label)
             pred_labels.append(pred_class), gt_labels.append(gt_class)
@@ -131,6 +133,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
         pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
         metrics = self.compute_torchmetrics(pred_vector, gt_vector, epoch)
+        metrics['test_loss'] = np.mean(test_loss)
         #
         return metrics        
         
@@ -205,7 +208,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     zero_mean_out = zero_mean_out.squeeze().float()
                     cls_out = cls_model(zero_mean_out)
                 
-                #logger.info('out shape{} ; label shape {}'.format(cls_out.shape, cls_label.shape))
+                
                 loss = self.cls_loss(cls_out, cls_label)
                 loss.backward()
                 optimizer.step()
@@ -213,7 +216,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 
                 
                 #pred_vector.append(out), gt_vector.append(ground_truth)
-                #training_loss.append(loss.detach().cpu().item())
+                training_loss.append(loss.detach().cpu().numpy().item())
                 lr = scheduler.optimizer.param_groups[0]['lr']
                 metrics = {'loss': loss.detach().cpu().item(),
                            'lr': lr}
@@ -224,10 +227,10 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 ####
             
             
-            #if self.rank == 0:
-            #    mean_training_loss = np.mean(training_loss)
-            #    metrics = {'epoch_training_loss': mean_training_loss.item()}
-            #    mlflow.log_metrics(metrics, step=step)
+            if self.rank == 0:
+                mean_training_loss = np.mean(training_loss)
+                metrics = {'epoch_training_loss': mean_training_loss.item()}
+                mlflow.log_metrics(metrics, step=step)
             scheduler.step()
             '''
             #Getting test metrics
@@ -244,10 +247,8 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
                 
                 
-                #if self.rank == 0:
-                #    mean_training_loss = np.mean(training_loss)
-                #    metrics = {'epoch_training_loss': mean_training_loss.item()}
-                #    mlflow.log_metrics(metrics, step=step)
+                if self.rank == 0:
+                    mlflow.log_metrics(metrics, step=step)
                 
                 
                 cls_model.train()
