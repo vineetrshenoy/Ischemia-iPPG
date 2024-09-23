@@ -45,7 +45,7 @@ class Spectrum_CLS(nn.Module):
         out = self.sig_act(out)
         # Skip connection
         #out = out + x
-        out = out.unsqueeze(0)
+        out = out
 
         return out
 

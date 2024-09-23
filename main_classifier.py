@@ -29,7 +29,7 @@ def ddp_setup(rank: int, world_size: int):
 
 
 
-def main(rank, args, world_size):
+def main(rank, args, world_size, curr_exp_id):
 
     cfg = get_cfg_defaults()  # This is take from torch_SparsePPG/config/config.py
     # overwrite default configs args with those from file
@@ -40,28 +40,25 @@ def main(rank, args, world_size):
 
     logger = setup_logger(cfg.OUTPUT.OUTPUT_DIR, distributed_rank=rank)
 
-    #ddp_setup(rank, world_size)
+    ddp_setup(rank, world_size)
     trainer = Ischemia_Classifier_Trainer(cfg, rank)
         
-    experiment_name = 'CLS-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
-    
-    #Create a new "experiment" to record data
-    exp_id = mlflow.create_experiment(experiment_name)
-         
+   
     
     # Dump the configuration to file, as well as write the output directory
     logger.info('Dumping configuration')
     os.makedirs(cfg.OUTPUT.OUTPUT_DIR, exist_ok=True)
     
+    #Create a new "experiment" to record data
     if rank == 0:
-        mlflow.start_run(experiment_id=exp_id)
+        mlflow.start_run(experiment_id=curr_exp_id)
     
-    trainer.train_classifier(args.experiment_id, exp_id)
+    trainer.train_classifier(args.experiment_id, curr_exp_id)
     #trainer.train_no_val(experiment_id=experiment_id)
     
     if rank == 0:
         mlflow.end_run()
-    #destroy_process_group()
+    destroy_process_group()
 
 if __name__ == '__main__':
 
@@ -77,6 +74,7 @@ if __name__ == '__main__':
         main(0, args, world_size, None)
         
     else:
-        
-        #mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
-        main(0, args, world_size)
+        experiment_name = 'CLS-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
+        experiment_id = mlflow.create_experiment(experiment_name)
+        mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
+        #main(0, args, world_size)

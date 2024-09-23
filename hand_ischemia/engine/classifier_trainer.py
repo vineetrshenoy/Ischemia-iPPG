@@ -197,7 +197,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
-                    cls_out = cls_model(X).squeeze()
+                    cls_out = cls_model(X)
                 
                 elif self.CLS_MODEL_TYPE == 'TiSc':
                     if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
@@ -205,7 +205,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     zero_mean_out = zero_mean_out.squeeze().float()
                     cls_out = cls_model(zero_mean_out)
                 
-                
+                logger.info('out shape{} ; label shape {}'.format(cls_out.shape, cls_label.shape))
                 loss = self.cls_loss(cls_out, cls_label)
                 loss.backward()
                 optimizer.step()
@@ -295,19 +295,35 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
             tourniquet_val_subdict = dict((k, tourniquet_list[k]) for k in val_tourniquet if k in tourniquet_list)
             val_subdict.update(tourniquet_val_subdict)
+        
+            # Build dataset
+            train_dataset = H5Dataset(self.cfg, train_subdict)
+            val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            #val_dataset = H5Dataset(self.cfg, train_subdict) #Debug only
+            logger.info('Train dataset size: {}'.format(len(train_dataset)))
+            logger.info('Test dataset size: {}'.format(len(val_dataset)))
 
+            
+            ## Build dataloader
+            train_dataloader = DataLoader(
+                train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
+            test_dataloader = DataLoader(
+                val_dataset, batch_size=1, shuffle=False)
+        
+        
             # Build model
             model, cls_model = build_model(self.cfg)
             model, cls_model  = model.to(self.rank), cls_model.to(self.rank)
-            #model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-            #cls_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(cls_model)
+            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            cls_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(cls_model)
+            model, cls_model = DDP(model, device_ids=[self.rank]), DDP(cls_model, device_ids=[self.rank])
             
             # Load checkpoint if it exists
             artifact_loc = sub_exp.info.artifact_uri.replace('file://', '')
             checkpoint_loc = os.path.join(artifact_loc, 'model_{}.pth'.format(val_subject))
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
-                model.load_state_dict(checkpoint['model_state_dict'])
+                model.module.load_state_dict(checkpoint['model_state_dict'])
             except:
                 raise Exception
             
@@ -320,19 +336,6 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
             logger.info('Training model {}'.format(val_subject))
 
-            # Build dataset
-            train_dataset = H5Dataset(self.cfg, train_subdict)
-            #val_dataset = H5DatasetTest(self.cfg, val_subdict)
-            val_dataset = H5Dataset(self.cfg, train_subdict)
-            logger.info('Train dataset size: {}'.format(len(train_dataset)))
-            logger.info('Test dataset size: {}'.format(len(val_dataset)))
-
-            
-            ## Build dataloader
-            train_dataloader = DataLoader(
-                train_dataset, batch_size=self.batch_size, shuffle=True)
-            test_dataloader = DataLoader(
-                val_dataset, batch_size=1, shuffle=False)
             
             # Create experiment and log training parameters
             run_name = '{}'.format(val_subject)
