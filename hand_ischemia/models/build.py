@@ -33,7 +33,7 @@ class Spectrum_CLS(nn.Module):
             ComplexMaxPool1d(16),
             
         )
-        self.last_linear = nn.Linear(19, 2)
+        self.last_linear = nn.Linear(10, 2)
         self.sig_act = nn.Sigmoid()
 
     def forward(self, x, **kwargs):
@@ -45,7 +45,7 @@ class Spectrum_CLS(nn.Module):
         out = self.sig_act(out)
         # Skip connection
         #out = out + x
-        out = out.unsqueeze(0)
+        out = out
 
         return out
 
