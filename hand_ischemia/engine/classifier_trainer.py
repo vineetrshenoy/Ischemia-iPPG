@@ -75,7 +75,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             torch.nn.Module, torch.nn.optim, torch.: The neural network modules
         """   
         cls_model.eval()
-        pred_labels, pred_vector, gt_labels, gt_vector, hr_nn, hr_gt = [], [], [], [], [], []
+        pred_labels, pred_vector, gt_labels, gt_vector, hr_nn, hr_gt, test_loss = [], [], [], [], [], [], []
         for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
                 
                 
@@ -172,7 +172,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
 
             logger.info('Training on Epoch {}'.format(i))
             pred_labels, pred_vector, gt_labels, gt_vector = [], [], [], []
-
+            training_loss = []
             for iter, (time_series, ground_truth, cls_label, window_label) in enumerate(dataloader):
                 
                 
@@ -205,22 +205,29 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     zero_mean_out = zero_mean_out.squeeze().float()
                     cls_out = cls_model(zero_mean_out)
                 
-                logger.info('out shape{} ; label shape {}'.format(cls_out.shape, cls_label.shape))
+                #logger.info('out shape{} ; label shape {}'.format(cls_out.shape, cls_label.shape))
                 loss = self.cls_loss(cls_out, cls_label)
                 loss.backward()
                 optimizer.step()
                 
                 
+                
                 #pred_vector.append(out), gt_vector.append(ground_truth)
+                #training_loss.append(loss.detach().cpu().item())
                 lr = scheduler.optimizer.param_groups[0]['lr']
                 metrics = {'loss': loss.detach().cpu().item(),
                            'lr': lr}
-                run.log(metrics, step=step) if run != None else False
+                #run.log(metrics, step=step) if run != None else False
                 if self.rank == 0:
                     mlflow.log_metrics(metrics, step=step)
                 step += 1
                 ####
             
+            
+            #if self.rank == 0:
+            #    mean_training_loss = np.mean(training_loss)
+            #    metrics = {'epoch_training_loss': mean_training_loss.item()}
+            #    mlflow.log_metrics(metrics, step=step)
             scheduler.step()
             '''
             #Getting test metrics
@@ -229,12 +236,18 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             mlflow.log_metrics(metrics, step=i)
             '''
             if i % self.eval_period == 0:
+                logger.warning('Evaluating at epoch {}'.format(i))
                 met = self.test_partition(self, run, model, cls_model, optimizer, scheduler, test_dataloader, i)
                 
                 acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
                 recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
                 logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
-                mlflow.log_metrics(met, step=i)
+                
+                
+                #if self.rank == 0:
+                #    mean_training_loss = np.mean(training_loss)
+                #    metrics = {'epoch_training_loss': mean_training_loss.item()}
+                #    mlflow.log_metrics(metrics, step=step)
                 
                 
                 cls_model.train()
@@ -306,7 +319,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             
             ## Build dataloader
             train_dataloader = DataLoader(
-                train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
+                train_dataset, batch_size=self.batch_size, drop_last=True, sampler=DistributedSampler(train_dataset))
             test_dataloader = DataLoader(
                 val_dataset, batch_size=1, shuffle=False)
         
@@ -359,7 +372,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
                     cls_model, optimizer, lr_scheduler, train_dataloader, test_dataloader)
             
-            
+            logger.warning('Finished Training; now testing')
             #Test the model
             met = self.test_partition(self, run, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.epochs)    
             acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
