@@ -30,7 +30,7 @@ import os
 __all__ = ['Ischemia_Classifier_Trainer']
 
 logger = logging.getLogger(__name__)
-wandb.require("core")
+#wandb.require("core")
 
 class Ischemia_Classifier_Trainer(SimpleTrainer):
 
@@ -125,7 +125,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.rank == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class)
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class, cls_out)
                     x = 5
             
             ###
@@ -286,6 +286,9 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             train_subjects = keys[train]
             val_subjects = keys[val]
             val_subject = val_subjects[0]
+            
+            #if val_subject != 'hand-subject6':
+            #    continue
             
             train_tourniquet = tourniquet_keys[train]
             val_tourniquet = tourniquet_keys[val]
