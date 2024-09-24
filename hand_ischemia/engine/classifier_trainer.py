@@ -30,7 +30,7 @@ import os
 __all__ = ['Ischemia_Classifier_Trainer']
 
 logger = logging.getLogger(__name__)
-wandb.require("core")
+#wandb.require("core")
 
 class Ischemia_Classifier_Trainer(SimpleTrainer):
 
@@ -92,7 +92,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     
                     ################################################## Pre-processing for complex model
                     L = 10*zero_mean_out.shape[2] + 1
-                    X = self._adjoint_model(zero_mean_out, L)
+                    X = Ischemia_Classifier_Trainer._adjoint_model(self, zero_mean_out, L)
                     ##################################################
                     #denoised_ts = denoised_ts.unsqueeze(0)
                     #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
@@ -125,7 +125,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.rank == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class)
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class, cls_out)
                     x = 5
             
             ###
@@ -136,7 +136,8 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         metrics['test_loss'] = np.mean(test_loss)
         #
         return metrics        
-        
+    
+    @staticmethod
     def _adjoint_model(self, Y, L):
         """Applies the adjoint model. Calculates the gradients
 
@@ -192,7 +193,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     
                     ################################################## Pre-processing for complex model
                     L = 10*zero_mean_out.shape[2] + 1
-                    X = self._adjoint_model(zero_mean_out, L)
+                    X = Ischemia_Classifier_Trainer._adjoint_model(self, zero_mean_out, L)
                     ##################################################
                     #denoised_ts = denoised_ts.unsqueeze(0)
                     #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
@@ -285,6 +286,9 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             train_subjects = keys[train]
             val_subjects = keys[val]
             val_subject = val_subjects[0]
+            
+            #if val_subject != 'hand-subject6':
+            #    continue
             
             train_tourniquet = tourniquet_keys[train]
             val_tourniquet = tourniquet_keys[val]
@@ -380,6 +384,17 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
             logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
             mlflow.log_metrics(met, step=self.epochs)
+
+            
+            ## Save the Model
+            out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, val_subject)
+            os.makedirs(out_dir, exist_ok=True)
+            model_name = 'clsmodel_{}.pth'.format(val_subject)
+            
+            out_path = os.path.join(out_dir, model_name)
+            torch.save({'model_state_dict': cls_model.module.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict()}, out_path)
+            mlflow.log_artifacts(out_dir)
 
 
             # End the run

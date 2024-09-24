@@ -18,6 +18,7 @@ def default_argument_parser():
     parser.add_argument("--checkpoint", default="",
                         metavar="FILE", help="path to location of checkpoint", required=False)
     parser.add_argument("--experiment_id", type=str)
+    parser.add_argument("--cls_experiment_id", type=str)
     parser.add_argument(
         "opts",
         help="""

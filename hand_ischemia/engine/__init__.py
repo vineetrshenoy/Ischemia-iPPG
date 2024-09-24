@@ -3,3 +3,4 @@ from .plotting_functions import plot_window_gt, plot_window_ts, plot_test_result
 from .hand_ischemia_trainer import Hand_Ischemia_Trainer
 from .hand_ischemia_tester import Hand_Ischemia_Tester
 from .classifier_trainer import Ischemia_Classifier_Trainer
+from .classifier_tester import Ischemia_Classifier_Tester

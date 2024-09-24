@@ -19,5 +19,5 @@ def build_optimizer(cfg, model):
 
 def build_lr_scheduler(cfg, optimizer):
 
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[4], gamma=0.1)
+    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[cfg.DENOISER.SCHEDULER_MILESTONE], gamma=0.1)
     return lr_scheduler
