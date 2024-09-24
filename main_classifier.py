@@ -2,7 +2,7 @@ import os
 import os.path as osp
 import sys
 from hand_ischemia.config import get_cfg_defaults, default_argument_parser, setup_logger
-from hand_ischemia.engine import Ischemia_Classifier_Trainer
+from hand_ischemia.engine import Ischemia_Classifier_Trainer, Ischemia_Classifier_Tester
 from hand_ischemia.models import build_model
 import mlflow
 import time
@@ -39,6 +39,24 @@ def main(rank, args, world_size, curr_exp_id):
     #cfg.freeze()
 
     logger = setup_logger(cfg.OUTPUT.OUTPUT_DIR, distributed_rank=rank)
+    
+    if args.test_only:
+        
+        experiment_name = 'CLS-TEST-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
+        
+        #Create a new "experiment" to record data
+        exp_id = mlflow.create_experiment(experiment_name)
+        mlflow.start_run(experiment_id=exp_id)
+        tester = Ischemia_Classifier_Tester(cfg, args)
+        
+        logger.info('Inside Tester')
+        #Use old experiment id to retriev runs
+        tester.test(args, exp_id)
+        
+        mlflow.end_run()
+        
+        
+        return
 
     ddp_setup(rank, world_size)
     trainer = Ischemia_Classifier_Trainer(cfg, rank)

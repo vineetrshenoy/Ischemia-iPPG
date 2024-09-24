@@ -92,7 +92,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     
                     ################################################## Pre-processing for complex model
                     L = 10*zero_mean_out.shape[2] + 1
-                    X = self._adjoint_model(zero_mean_out, L)
+                    X = Ischemia_Classifier_Trainer._adjoint_model(self, zero_mean_out, L)
                     ##################################################
                     #denoised_ts = denoised_ts.unsqueeze(0)
                     #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
@@ -136,7 +136,8 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         metrics['test_loss'] = np.mean(test_loss)
         #
         return metrics        
-        
+    
+    @staticmethod
     def _adjoint_model(self, Y, L):
         """Applies the adjoint model. Calculates the gradients
 
@@ -192,7 +193,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     
                     ################################################## Pre-processing for complex model
                     L = 10*zero_mean_out.shape[2] + 1
-                    X = self._adjoint_model(zero_mean_out, L)
+                    X = Ischemia_Classifier_Trainer._adjoint_model(self, zero_mean_out, L)
                     ##################################################
                     #denoised_ts = denoised_ts.unsqueeze(0)
                     #denoised_ts = torch.permute(denoised_ts, [0, 2, 1])
