@@ -16,7 +16,7 @@ from .plotting_functions import plot_window_ts, plot_30sec, plot_test_results, p
 
 from .simple_trainer import SimpleTrainer
 
-from hand_ischemia.models import build_model, CorrelationLoss
+from hand_ischemia.models import build_model, CorrelationLoss, ContrastLoss
 from hand_ischemia.optimizers import build_optimizer, build_lr_scheduler
 from hand_ischemia.config import get_cfg_defaults
 
@@ -52,8 +52,11 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         self.eval_period = cfg.TEST.EVAL_PERIOD
         self.PLOT_INPUT_OUTPUT = cfg.TEST.PLOT_INPUT_OUTPUT
         self.PLOT_LAST = cfg.TEST.PLOT_LAST
-        self.cls_loss = torch.nn.BCELoss()
-        self.regression_loss = CorrelationLoss()
+        #self.cls_loss = torch.nn.BCELoss()
+        #self.regression_loss = CorrelationLoss()
+        delta_t = int(self.SLIDING_WINDOW_LENGTH/2)
+        K = 4
+        self.regression_loss = ContrastLoss(delta_t, K, self.FPS, high_pass=40, low_pass=250)
         self.eps = 1e-6
 
         self.rank = gpu_id
@@ -133,7 +136,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.rank == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 'n_a', 'n_a', 'n_a')
                     x = 5
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
             #mlflow.log_metrics(metrics, step=step)
@@ -201,7 +204,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 ground_truth = ground_truth.unsqueeze(1).to(self.rank)
                 cls_label = cls_label.to(self.rank)
                 
-                out = model(time_series.float())[:, -1:]
+                out = model(time_series.float())
                 zero_mean_out = (out - torch.mean(out, axis=2, keepdim=True)) / (torch.abs(torch.mean(out, axis=2, keepdim=True)) + 1e-6) #AC-DC Normalization
                 '''
                 if self.CLS_MODEL_TYPE == 'SPEC':
@@ -223,8 +226,8 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                     zero_mean_out = zero_mean_out.squeeze().float()
                     cls_out = cls_model(zero_mean_out)
                 '''
-                
-                loss = self.regression_loss(zero_mean_out, ground_truth.float()) #+ self.cls_loss(cls_out, cls_label)
+                label_flag = torch.ones(out.shape[0], device=self.device)
+                loss, p_loss, n_loss, p_loss_gt, n_loss_gt = self.regression_loss(out, ground_truth[:, 0, :].float(), label_flag) #+ self.cls_loss(cls_out, cls_label)
                 loss.backward()
                 optimizer.step()
                 
@@ -293,7 +296,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             
             # Build dataset
             train_dataset = H5Dataset(self.cfg, train_subdict)
-            val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            val_dataset = H5DatasetTest(self.cfg, train_subdict)
             logger.info('Train dataset size: {}'.format(len(train_dataset)))
             logger.info('Test dataset size: {}'.format(len(val_dataset)))
             
@@ -305,16 +308,18 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             #self.PLOT_INPUT_OUTPUT = False
 
             ##Build dataloader
+            #train_dataloader = DataLoader(
+            #    train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
             train_dataloader = DataLoader(
-                train_dataset, batch_size=self.batch_size, sampler=DistributedSampler(train_dataset))
+                train_dataset, batch_size=self.batch_size, shuffle=False)
             val_dataloader = DataLoader(
                 val_dataset, batch_size=1, shuffle=False)
 
             #Build the model, optimizer, and scheduler
             model, cls_model = build_model(self.cfg)
             model = model.to(self.rank)
-            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-            model = DDP(model, device_ids=[self.rank])
+            #model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            #model = DDP(model, device_ids=[self.rank])
             optimizer = build_optimizer(self.cfg, model)
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
@@ -357,7 +362,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             model_name = 'model_{}.pth'.format(test_subject)
             
             out_path = os.path.join(out_dir, model_name)
-            torch.save({'model_state_dict': model.module.state_dict(),
+            torch.save({'model_state_dict': model.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict()}, out_path)
             mlflow.log_artifacts(out_dir)
             

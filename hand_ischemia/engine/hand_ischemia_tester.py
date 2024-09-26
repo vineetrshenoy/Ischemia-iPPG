@@ -51,7 +51,23 @@ class Hand_Ischemia_Tester(SimpleTrainer):
         logger.info('Inside Hand_Ischemia_Tester')
     
 
-
+    def get_contrastphys_checkpoint(self, test_subject):
+        
+        checkpoint_loc = ''
+        if test_subject == 'hand-subject1':
+            checkpoint_loc = '/cis/home/vshenoy/durr_hand/contrast-phys/contrast-phys+/results/default/1/epoch10.pt'
+        elif test_subject == 'hand-subject2':
+            checkpoint_loc = '/cis/home/vshenoy/durr_hand/contrast-phys/contrast-phys+/results/default/2/epoch10.pt'
+        elif test_subject == 'hand-subject3':
+            checkpoint_loc = '/cis/home/vshenoy/durr_hand/contrast-phys/contrast-phys+/results/default/3/epoch10.pt'
+        elif test_subject == 'hand-subject4':
+            checkpoint_loc = '/cis/home/vshenoy/durr_hand/contrast-phys/contrast-phys+/results/default/4/epoch10.pt'
+        elif test_subject == 'hand-subject5':
+            checkpoint_loc = '/cis/home/vshenoy/durr_hand/contrast-phys/contrast-phys+/results/default/5/epoch10.pt'
+        elif test_subject == 'hand-subject6':
+            checkpoint_loc = '/cis/home/vshenoy/durr_hand/contrast-phys/contrast-phys+/results/default/6/epoch10.pt'
+        
+        return checkpoint_loc
 
     def test(self, experiment_id, curr_exp_id):
         """The main training loop for the partition trainer
@@ -86,10 +102,10 @@ class Hand_Ischemia_Tester(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Load checkpoint if it exists
-            checkpoint_loc = os.path.join(artifact_loc, 'model_{}.pth'.format(test_subject))
+            checkpoint_loc = self.get_contrastphys_checkpoint(test_subject)
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
-                model.load_state_dict(checkpoint['model_state_dict'])
+                model.load_state_dict(checkpoint)
             except:
                 raise Exception
             

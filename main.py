@@ -58,7 +58,7 @@ def main(rank, args, world_size, experiment_id):
         
         return
     
-    ddp_setup(rank, world_size)
+    #ddp_setup(rank, world_size)
     trainer = Hand_Ischemia_Trainer(cfg, rank)
     # Dump the configuration to file, as well as write the output directory
     logger.info('Dumping configuration')
@@ -72,7 +72,7 @@ def main(rank, args, world_size, experiment_id):
     
     if rank == 0:
         mlflow.end_run()
-    destroy_process_group()
+    #destroy_process_group()
 
 if __name__ == '__main__':
 
@@ -89,5 +89,5 @@ if __name__ == '__main__':
         
     else:
         experiment_id = mlflow.create_experiment(time.strftime("%m-%d-%H:%M:%S"))
-        mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
-        #main(0, args, world_size, experiment_id)
+        #mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
+        main(0, args, world_size, experiment_id)
