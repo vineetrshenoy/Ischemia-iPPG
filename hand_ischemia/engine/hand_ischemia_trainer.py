@@ -261,7 +261,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             
 
         
-        return cls_model, optimizer, scheduler
+        return model, optimizer, scheduler
 
     def train(self, experiment_id):
         """The main training loop for the partition trainer
@@ -339,7 +339,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 self.log_config_dict(self.cfg)
 
             # Train the model
-            cls_model, optimizer, lr_scheduler = self.train_partition(run, model,
+            model, optimizer, lr_scheduler = self.train_partition(run, model,
                 None, optimizer, lr_scheduler, train_dataloader, val_dataloader)
             
             logger.warning('Finished training ')
