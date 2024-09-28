@@ -23,14 +23,14 @@ class Spectrum_CLS(nn.Module):
         super(Spectrum_CLS, self).__init__()
         self.mtype = 'NN'
         self.layers = nn.Sequential(
-            nn.Conv1d(1, 32, kernel_size=16, stride=2, dtype=torch.cfloat),
-            ComplexReLU(),
-            NaiveComplexBatchNorm1d(32),
-            nn.Conv1d(32, 64, kernel_size=16, stride=2, dtype=torch.cfloat),
-            ComplexReLU(),
-            NaiveComplexBatchNorm1d(64),
-            nn.Conv1d(64, 1, kernel_size=16, stride=2, dtype=torch.cfloat),
-            ComplexMaxPool1d(16),
+            nn.Conv1d(1, 32, kernel_size=16, stride=2),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm1d(32),
+            nn.Conv1d(32, 64, kernel_size=16, stride=2),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm1d(64),
+            nn.Conv1d(64, 1, kernel_size=16, stride=2),
+            torch.nn.MaxPool1d(16),
             
         )
         self.last_linear = nn.Linear(10, 2)
