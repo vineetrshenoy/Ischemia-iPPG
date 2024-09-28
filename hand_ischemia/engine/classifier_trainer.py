@@ -100,7 +100,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
-                    cls_out = cls_model(X).unsqueeze(0)
+                    cls_out = cls_model(torch.abs(X)).unsqueeze(0)
                 
                 elif self.CLS_MODEL_TYPE == 'TiSc':
                     if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
@@ -201,7 +201,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
-                    cls_out = cls_model(X)
+                    cls_out = cls_model(torch.abs(X))
                 
                 elif self.CLS_MODEL_TYPE == 'TiSc':
                     if zero_mean_out.shape[1] > 1: #Because the denoiser didn't collapse to one dimension
