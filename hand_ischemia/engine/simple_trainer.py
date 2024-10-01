@@ -46,7 +46,7 @@ class SimpleTrainer(object):
         
         metrics_dict = {'acc': acc, 'auroc': auroc, 'precision': precision, 'recall': recall, 'f1score': f1score, 'confusion':0}
         return metrics_dict
-        
+    '''   
     def compute_torchmetrics(self, pred_labels, gt_labels, epoch, mode='test'):
                 
         acc = self.BinaryAccuracy(pred_labels, gt_labels).item()
@@ -76,6 +76,57 @@ class SimpleTrainer(object):
             mlflow.log_figure(fig, 'roc_curve.jpg')
             
             plt.close()
+
+        return metrics_dict
+    '''
+    def update_torchmetrics(self, pred_labels, gt_labels, pred_class, gt_class, mode='test'):
+        
+        #Update the metrics    
+        self.BinaryAccuracy.update(pred_labels, gt_labels)
+        self.BinaryAUROC.update(pred_labels, gt_labels)
+        self.BinaryAvgPrecision.update(pred_labels, gt_labels.long())
+        self.BinaryRecall.update(pred_labels, gt_labels)
+        self.BinaryF1Score.update(pred_labels, gt_labels)   
+        self.BinaryConfusionMatrix.update(pred_class, gt_class)
+        self.BinaryPrecisionRecallCurve.update(pred_labels, gt_labels.long())
+        self.BinaryROC.update(pred_labels, gt_labels.long())
+        
+    
+    def compute_torchmetrics(self, epoch, mode='test'):
+        
+        
+        
+        #Compute the metrics
+        acc = self.BinaryAccuracy.compute().item()
+        auroc = self.BinaryAUROC.compute().item()
+        precision = self.BinaryAvgPrecision.compute().item()
+        recall = self.BinaryRecall.compute().item()
+        f1score = self.BinaryF1Score.compute().item()
+        
+        metrics_dict = {'test_acc': acc, 'test_auroc': auroc, 'test_precision': precision,
+                        'test_recall': recall, 'test_f1score': f1score, 'test_confusion':0}
+        
+        
+        if epoch == self.epochs:
+            confusion_fig, ax = self.BinaryConfusionMatrix.plot()
+            mlflow.log_figure(confusion_fig, 'confusion_mat.jpg')
+            precision_fig, ax = self.BinaryPrecisionRecallCurve.plot()
+            mlflow.log_figure(precision_fig, 'pr_curve.jpg')
+            roc_fig, ax = self.BinaryROC.plot()
+            mlflow.log_figure(roc_fig, 'roc_curve.jpg')
+            
+            plt.close()
+        
+        #Reset the metrics
+        
+        self.BinaryAccuracy.reset()
+        self.BinaryAUROC.reset()
+        self.BinaryAvgPrecision.reset()
+        self.BinaryRecall.reset()
+        self.BinaryF1Score.reset()   
+        self.BinaryConfusionMatrix.reset()
+        self.BinaryPrecisionRecallCurve.reset()
+        self.BinaryROC.reset()
 
         return metrics_dict
         
