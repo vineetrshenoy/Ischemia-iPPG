@@ -320,7 +320,12 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             #val_dataset = H5Dataset(self.cfg, train_subdict) #Debug only
             logger.info('Train dataset size: {}'.format(len(train_dataset)))
             logger.info('Test dataset size: {}'.format(len(val_dataset)))
-
+            
+            
+            self.cfg.INPUT.TRAIN_ISCHEMIC = train_dataset.num_ischemic
+            self.cfg.INPUT.TRAIN_PERFUSE = train_dataset.num_perfuse
+            self.cfg.INPUT.TEST_ISCHEMIC = val_dataset.num_ischemic
+            self.cfg.INPUT.TEST_PERFUSE = val_dataset.num_perfuse
             
             ## Build dataloader
             train_dataloader = DataLoader(

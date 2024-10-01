@@ -59,7 +59,7 @@ def build_model(cfg):
     elif cfg.TIME_SCALE_PPG.CLS_MODEL_TYPE == 'SPEC':
         classifier = Spectrum_CLS()
         
-
+    classifier = classifier.apply(weights_init)
     
     return model, classifier
 
