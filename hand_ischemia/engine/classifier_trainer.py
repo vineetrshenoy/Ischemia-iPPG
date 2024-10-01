@@ -112,9 +112,11 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             loss = self.cls_loss(cls_out, cls_label)
             test_loss.append(loss.detach().cpu().numpy().item())
             
+            cls_out = F.softmax(cls_out)
             pred_class, gt_class = torch.argmax(cls_out), torch.argmax(cls_label)
-            pred_labels.append(pred_class), gt_labels.append(gt_class)
-            pred_vector.append(cls_out), gt_vector.append(cls_label)
+            self.update_torchmetrics(cls_out, cls_label, pred_class, gt_class)
+            #pred_labels.append(pred_class), gt_labels.append(gt_class)
+            #pred_vector.append(cls_out), gt_vector.append(cls_label)
             pred_class = 'ischemic' if pred_class == 1 else 'perfuse'
             gt_class = 'ischemic' if gt_class == 1 else 'perfuse'
             
@@ -129,11 +131,11 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     x = 5
             
             ###
-        
-        pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
-        pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
-        metrics = self.compute_torchmetrics(pred_vector, gt_vector, epoch)
-        metrics['test_loss'] = np.mean(test_loss)
+        metrics = self.compute_torchmetrics(epoch)
+        #pred_labels, gt_labels = torch.stack(pred_labels), torch.stack(gt_labels)
+        #pred_vector, gt_vector = torch.squeeze(torch.stack(pred_vector)), torch.squeeze(torch.stack(gt_vector))
+        #metrics = self.update_and_compute_torchmetrics(pred_vector, gt_vector, epoch)
+        #metrics['test_loss'] = np.mean(test_loss)
         #
         return metrics        
     

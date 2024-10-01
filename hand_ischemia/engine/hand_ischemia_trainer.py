@@ -30,7 +30,7 @@ import os
 __all__ = ['Hand_Ischemia_Trainer']
 
 logger = logging.getLogger(__name__)
-wandb.require("core")
+#wandb.require("core")
 
 class Hand_Ischemia_Trainer(SimpleTrainer):
 
