@@ -133,7 +133,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
                 denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
                 denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
                 if self.rank == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0)
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, 0, 0, None)
                     x = 5
             #metrics = {'denoiser_loss': loss.detach().cpu().item()}
             #mlflow.log_metrics(metrics, step=step)
@@ -272,7 +272,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         with open('/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/ubfc_only.json', 'r') as f:
             ubfc_dict = json.load(f)
         keys = np.array([*train_list])
-        kf = KFold(6, shuffle=False)
+        kf = KFold(9, shuffle=False)
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         for idx, (train, val) in enumerate(kf.split(keys)):
