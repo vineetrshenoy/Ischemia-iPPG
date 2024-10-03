@@ -19,7 +19,7 @@ class SimpleTrainer(object):
             self.device = torch.device('cuda')
         else:
             self.device = torch.device('cpu')
-
+        self.epochs = cfg.DENOISER.EPOCHS
         self.BinaryAccuracy = classification.BinaryAccuracy().to(self.device)
         self.BinaryAUROC = classification.BinaryAUROC().to(self.device)
         self.BinaryAvgPrecision = classification.BinaryAveragePrecision().to(self.device)
