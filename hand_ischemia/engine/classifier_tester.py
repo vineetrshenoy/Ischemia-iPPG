@@ -75,6 +75,7 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         kf = KFold(6, shuffle=False)
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
+        cls_out_all, cls_label_all, pred_class_all, gt_class_all = [], [], [], []
         for idx, (train, val) in enumerate(kf.split(keys)):
             
             # Generating the one-versus-all partition of subjects for Hand Surgeon
@@ -150,14 +151,29 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
 
             
             # Test the model
-            met = Ischemia_Classifier_Trainer.test_partition(self, None, model, cls_model, optimizer, lr_scheduler, val_dataloader, self.epochs)
+            met, full_mets = Ischemia_Classifier_Trainer.test_partition(self, None, model, cls_model, optimizer, lr_scheduler, val_dataloader, self.epochs)
             acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
             recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
             logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
             mlflow.log_metrics(met, step=self.epochs)
 
-
+            cls_out_all += full_mets[0]
+            cls_label_all += full_mets[1]
+            pred_class_all += full_mets[2]
+            gt_class_all += full_mets[3]
 
             # End the run
             mlflow.end_run()
 
+
+        
+        metric_caulator = SimpleTrainer(self.cfg)
+        cls_out_all, cls_label_all = torch.stack(cls_out_all), torch.stack(cls_label_all) 
+        pred_class_all, gt_class_all = torch.stack(pred_class_all), torch.stack(gt_class_all) 
+        metric_caulator.update_torchmetrics(cls_out_all, cls_label_all, pred_class_all, gt_class_all)
+        met = metric_caulator.compute_torchmetrics(self.epochs)
+        
+        acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
+        recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
+        logger.warning('OVERALL RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
+        mlflow.log_metrics(met, step=self.epochs)

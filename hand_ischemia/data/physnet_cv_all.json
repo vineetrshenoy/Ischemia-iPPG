@@ -234,7 +234,126 @@
 
         }
 
+    },
+    "hand-subject7": {
+
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0432/":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 0,
+            "finger5-intermediate.h5": 0,
+            "finger5-metacarpal.h5": 0,
+            "finger5-proximal.h5": 0
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0433/":{
+            "finger2-metacarpal.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 0,
+            "finger5-intermediate.h5": 0,
+            "finger5-metacarpal.h5": 0,
+            "finger5-proximal.h5": 0
+
+        }
+
+    },
+    "hand-subject8": {
+
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0434/":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 0,
+            "finger5-intermediate.h5": 0,
+            "finger5-metacarpal.h5": 0,
+            "finger5-proximal.h5": 0
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0435/":{
+            "finger2-metacarpal.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 0,
+            "finger5-intermediate.h5": 0,
+            "finger5-metacarpal.h5": 0,
+            "finger5-proximal.h5": 0
+
+        }
+
+    },
+    "hand-subject9": {
+
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0436/":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 0,
+            "finger5-intermediate.h5": 0,
+            "finger5-metacarpal.h5": 0,
+            "finger5-proximal.h5": 0
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0437/":{
+            "finger2-metacarpal.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 0,
+            "finger5-intermediate.h5": 0,
+            "finger5-metacarpal.h5": 0,
+            "finger5-proximal.h5": 0
+
+        }
+
     }
+
         
         
         
