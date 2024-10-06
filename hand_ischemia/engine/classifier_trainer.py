@@ -82,7 +82,8 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                 
             
             time_series = time_series.to(self.rank)
-            ground_truth = ground_truth.unsqueeze(1).to(self.rank)
+            if ground_truth is not None:
+                ground_truth = ground_truth.unsqueeze(1).to(self.rank)
             cls_label = cls_label.to(self.rank)
             
             with torch.no_grad():

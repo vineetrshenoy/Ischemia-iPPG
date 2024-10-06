@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import mlflow
-from hand_ischemia.data import H5Dataset, H5DatasetTest
+from hand_ischemia.data import H5Dataset, H5DatasetTest, H5DatasetTestHospital
 from hand_ischemia.engine import Ischemia_Classifier_Trainer
 
 from sklearn.model_selection import KFold
@@ -87,28 +87,32 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
             val_tourniquet = tourniquet_keys[val]
             tourniquet_val_subject = val_tourniquet[0]
             
-            
-            query = "tag.mlflow.runName = '{}'".format(val_subject)
-            sub_exp = mlflow.search_runs([args.experiment_id], filter_string=query, output_format='list')[0]
-            cls_sub_exp = mlflow.search_runs([args.cls_experiment_id], filter_string=query, output_format='list')[0]
-                        
-            # Generating the one-versus-all partition of subjects for Hand Surgeon
-            train_subjects = keys[train]
-            val_subjects = keys[val]
-            
-            train_tourniquet = tourniquet_keys[train]
-            val_tourniquet = tourniquet_keys[val]
-            
-            train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
-            tourniquet_train_subdict = dict((k, tourniquet_list[k]) for k in train_tourniquet if k in tourniquet_list)
-            train_subdict.update(tourniquet_train_subdict)
-            
-            val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
-            tourniquet_val_subdict = dict((k, tourniquet_list[k]) for k in val_tourniquet if k in tourniquet_list)
-            val_subdict.update(tourniquet_val_subdict)
-        
+            if args.test_CV:
+                query = "tag.mlflow.runName = '{}'".format(val_subject)
+                sub_exp = mlflow.search_runs([args.experiment_id], filter_string=query, output_format='list')[0]
+                cls_sub_exp = mlflow.search_runs([args.cls_experiment_id], filter_string=query, output_format='list')[0]
+                            
+                # Generating the one-versus-all partition of subjects for Hand Surgeon
+                train_subjects = keys[train]
+                val_subjects = keys[val]
+                
+                train_tourniquet = tourniquet_keys[train]
+                val_tourniquet = tourniquet_keys[val]
+                
+                train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
+                tourniquet_train_subdict = dict((k, tourniquet_list[k]) for k in train_tourniquet if k in tourniquet_list)
+                train_subdict.update(tourniquet_train_subdict)
+                
+                val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
+                tourniquet_val_subdict = dict((k, tourniquet_list[k]) for k in val_tourniquet if k in tourniquet_list)
+                val_subdict.update(tourniquet_val_subdict)
+                val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            else: 
+                with open(self.test_json_path, 'r') as f:
+                    val_subdict = json.load(f)
+                val_dataset = H5DatasetTest(self.cfg, val_subdict)
             # Build dataset
-            val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            
             
             logger.info('Test dataset size: {}'.format(len(val_dataset)))
 
