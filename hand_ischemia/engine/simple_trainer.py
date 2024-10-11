@@ -2,6 +2,7 @@ import sys
 import os
 import torch
 from hand_ischemia.config import convert_to_dict
+import torcheval.metrics
 from torcheval.metrics import BinaryAccuracy, BinaryAUROC, BinaryF1Score, BinaryPrecision, BinaryRecall, BinaryConfusionMatrix
 import torchmetrics.classification as classification
 import mlflow
@@ -28,6 +29,15 @@ class SimpleTrainer(object):
         self.BinaryConfusionMatrix = classification.BinaryConfusionMatrix().to(self.device)
         self.BinaryPrecisionRecallCurve = classification.BinaryPrecisionRecallCurve().to(self.device)
         self.BinaryROC = classification.BinaryROC().to(self.device)
+        
+        self.BinaryAccuracy_eval = torcheval.metrics.BinaryAccuracy().to(self.device)
+        #self.BinaryAUROC_eval = torcheval.metrics.BinaryAUROC().to(self.device)
+        self.BinaryPrecision_eval = torcheval.metrics.BinaryPrecision().to(self.device)
+        self.BinaryRecall_eval = torcheval.metrics.BinaryRecall().to(self.device)
+        self.BinaryF1Score_eval = torcheval.metrics.BinaryF1Score().to(self.device)
+        #self.BinaryConfusionMatrix = torcheval.metrics.BinaryConfusionMatrix().to(self.device)
+        #self.BinaryPrecisionRecallCurve = torcheval.metrics.BinaryPrecisionRecallCurve().to(self.device)
+        #self.BinaryROC = classification.BinaryROC().to(self.device)
 
     def log_config_dict(self, cfg):
         # Log the parameters
@@ -91,6 +101,19 @@ class SimpleTrainer(object):
         self.BinaryPrecisionRecallCurve.update(pred_labels, gt_labels.long())
         self.BinaryROC.update(pred_labels, gt_labels.long())
         
+        
+        if pred_class.dim() == 0:
+            pred_class = pred_class.unsqueeze(0)
+            gt_class = gt_class.unsqueeze(0)
+        #update torcheval metrics
+        self.BinaryAccuracy_eval.update(pred_class, gt_class)
+        #self.BinaryAUROC_eval.update(pred_labels, gt_labels)
+        self.BinaryPrecision_eval.update(pred_class, gt_class)
+        self.BinaryRecall_eval.update(pred_class, gt_class)
+        self.BinaryF1Score_eval.update(pred_class, gt_class)   
+        #self.BinaryConfusionMatrix_eval.update(pred_class, gt_class)
+        #self.BinaryPrecisionRecallCurve_eval.update(pred_labels, gt_labels.long())
+        #self.BinaryROC_eval.update(pred_labels, gt_labels.long())
     
     def compute_torchmetrics(self, epoch, mode='test'):
         
@@ -103,8 +126,16 @@ class SimpleTrainer(object):
         recall = self.BinaryRecall.compute().item()
         f1score = self.BinaryF1Score.compute().item()
         
+        #Compute the metrics
+        acc_tm = self.BinaryAccuracy_eval.compute().item()
+        #auroc = self.BinaryAUROC_eval.compute().item()
+        precision_tm = self.BinaryPrecision_eval.compute().item()
+        recall_tm = self.BinaryRecall_eval.compute().item()
+        f1score_tm = self.BinaryF1Score_eval.compute().item()
+        
         metrics_dict = {'test_acc': acc, 'test_auroc': auroc, 'test_precision': precision,
-                        'test_recall': recall, 'test_f1score': f1score, 'test_confusion':0}
+                        'test_recall': recall, 'test_f1score': f1score, 'test_confusion':0,
+                        'acc_tm': acc_tm, 'recall_tm': recall_tm, 'precision_tm': precision_tm, 'f1_tm': f1score_tm}
         
         
         if epoch == self.epochs:
@@ -127,6 +158,10 @@ class SimpleTrainer(object):
         self.BinaryConfusionMatrix.reset()
         self.BinaryPrecisionRecallCurve.reset()
         self.BinaryROC.reset()
+        self.BinaryAccuracy_eval.reset()
+        self.BinaryPrecision_eval.reset()
+        self.BinaryRecall_eval.reset()
+        self.BinaryF1Score_eval.reset()
 
         return metrics_dict
         

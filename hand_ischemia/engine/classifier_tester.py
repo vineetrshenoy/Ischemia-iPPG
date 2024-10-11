@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import mlflow
-from hand_ischemia.data import H5Dataset, H5DatasetTest, H5DatasetTestHospital
+from hand_ischemia.data import H5Dataset, H5DatasetTest
 from hand_ischemia.engine import Ischemia_Classifier_Trainer
 
 from sklearn.model_selection import KFold
@@ -87,10 +87,11 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
             val_tourniquet = tourniquet_keys[val]
             tourniquet_val_subject = val_tourniquet[0]
             
+            query = "tag.mlflow.runName = '{}'".format(val_subject)
+            sub_exp = mlflow.search_runs([args.experiment_id], filter_string=query, output_format='list')[0]
+            cls_sub_exp = mlflow.search_runs([args.cls_experiment_id], filter_string=query, output_format='list')[0]
+            
             if args.test_CV:
-                query = "tag.mlflow.runName = '{}'".format(val_subject)
-                sub_exp = mlflow.search_runs([args.experiment_id], filter_string=query, output_format='list')[0]
-                cls_sub_exp = mlflow.search_runs([args.cls_experiment_id], filter_string=query, output_format='list')[0]
                             
                 # Generating the one-versus-all partition of subjects for Hand Surgeon
                 train_subjects = keys[train]
@@ -112,7 +113,8 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
                     val_subdict = json.load(f)
                 val_dataset = H5DatasetTest(self.cfg, val_subdict)
             # Build dataset
-            
+            self.cfg.INPUT.TEST_ISCHEMIC = val_dataset.num_ischemic
+            self.cfg.INPUT.TEST_PERFUSE = val_dataset.num_perfuse
             
             logger.info('Test dataset size: {}'.format(len(val_dataset)))
 
@@ -174,7 +176,7 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         metric_caulator = SimpleTrainer(self.cfg)
         cls_out_all, cls_label_all = torch.stack(cls_out_all), torch.stack(cls_label_all) 
         pred_class_all, gt_class_all = torch.stack(pred_class_all), torch.stack(gt_class_all) 
-        metric_caulator.update_torchmetrics(cls_out_all, cls_label_all, pred_class_all, gt_class_all)
+        metric_caulator.update_torchmetrics(cls_out_all, cls_label_all, pred_class_all, gt_class_all, mode='last')
         met = metric_caulator.compute_torchmetrics(self.epochs)
         
         acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
