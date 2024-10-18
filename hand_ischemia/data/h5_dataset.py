@@ -247,6 +247,57 @@ class H5DatasetTest(Dataset):
         img_seq = np.transpose(img_seq, (3, 0, 1, 2)).astype('float32')
         img_seq = torch.from_numpy(img_seq.copy())
         return img_seq, bvp, cls_label, window_label
+    
+class H5DatasetTestHospital(Dataset):
+
+    def __init__(self, cfg, data_dict):
+        self.gt_datapath = cfg.INPUT.GT_FILEPATH
+        self.ts_filepath = cfg.INPUT.TIME_SERIES_FILEPATH
+        self.train_json_path = cfg.INPUT.TRAIN_JSON_PATH
+
+        self.cfg = cfg
+        self.PASSBAND_FREQ = cfg.TIME_SCALE_PPG.PASSBAND_FREQ
+        self.CUTOFF_FREQ = cfg.TIME_SCALE_PPG.CUTOFF_FREQ
+        self.NUM_TAPS = cfg.TIME_SCALE_PPG.NUM_TAPS
+        self.TIME_WINDOW_SEC = cfg.TIME_SCALE_PPG.TIME_WINDOW_SEC
+        self.FPS = cfg.TIME_SCALE_PPG.FPS
+        self.FRAME_STRIDE = int(cfg.TIME_SCALE_PPG.FRAME_STRIDE_TEST * self.FPS)
+        self.SLIDING_WINDOW_LENGTH = int(self.FPS * self.TIME_WINDOW_SEC)
+        cutoff = [(self.PASSBAND_FREQ / 60), (self.CUTOFF_FREQ/60)]
+        #self.bp_filt = firwin(numtaps=self.NUM_TAPS,
+        #                      cutoff=cutoff, pass_zero='bandpass', fs=self.FPS)
+        self.L = 10*self.SLIDING_WINDOW_LENGTH + 1
+        self.ch = cfg.INPUT.CHANNEL
+        self.b, self.a = scipy.signal.butter(self.NUM_TAPS, cutoff, btype='bandpass', fs=self.FPS)
+        #with open(self.train_json_path, 'r') as f:
+        #    self.ts_list = json.load(f)
+        self.ts_time_windows, self.time_window_label = H5Dataset._get_timeseries(self, data_dict)
+        self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
+        
+        #Debug only
+        #self.ts_time_windows = self.ts_time_windows[0:20]
+        x = 5
+
+    def __len__(self):
+        return len(self.ts_time_windows)
+
+    def __getitem__(self, idx):
+        ts_tuple = self.ts_time_windows[idx]
+        window_label = self.time_window_label[idx]
+        
+        filename, idx_start, idx_end = ts_tuple[0], ts_tuple[1], ts_tuple[2]
+        cls_label, window_label = ts_tuple[3], ts_tuple[4]
+
+        try:
+            with h5py.File(filename, 'r') as f:
+                #plot_window_gt(self.FPS, bvp, 'temp')
+                img_seq = f['imgs'][idx_start:idx_end]
+        except:
+            raise RuntimeError("unable to handle error")
+            
+        img_seq = np.transpose(img_seq, (3, 0, 1, 2)).astype('float32')
+        img_seq = torch.from_numpy(img_seq.copy())
+        return img_seq, None, cls_label, window_label
 if __name__ == "__main__":
     print('Hello World')
     train_list = ['/cis/net/io72a/data/vshenoy/durr_hand/contrast-w-gt-08-01/chi_034/finger3-distal.h5', '/cis/net/io72a/data/vshenoy/durr_hand/contrast-w-gt-08-01/chi_034/finger3-intermediate.h5']

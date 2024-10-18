@@ -5,7 +5,7 @@ INPUT:
   #TIME_SERIES_FILEPATH: "/cis/net/r22a/data/vshenoy/merl/time_series_results/biosignals_time_series/unrolled-ippg-time_series/time_series"
   TRAIN_JSON_PATH: "/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/physnet_cv_all.json"
   #TEST_JSON_PATH: "/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/physnet_cv_all.json"
-  TEST_JSON_PATH: "/cis/home/vshenoy/durr_hand/Physnet_Ischemia/hand_ischemia/data/tourniquet_ischemia.json"
+  TEST_JSON_PATH: "/cis/home/vshenoy/durr_hand/Physnet_Ischemia/hand_ischemia/data/hospital_hands.json"
 TIME_SCALE_PPG:
   FPS: 30
   PASSBAND_FREQ: 36
@@ -19,7 +19,7 @@ TIME_SCALE_PPG:
   CLS_MODEL_TYPE: "SPEC"
 DENOISER:
   BATCH_SIZE: 2
-  EPOCHS: 4
+  EPOCHS: 5
   LR: 0.01
   WEIGHT_DECAY: 0.0
 TEST:

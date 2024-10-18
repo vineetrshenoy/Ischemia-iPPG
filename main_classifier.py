@@ -42,7 +42,7 @@ def main(rank, args, world_size, curr_exp_id):
     
     if args.test_only:
         
-        experiment_name = 'CLS-TEST-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
+        experiment_name = 'CLS-TEST-{}-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id, args.cls_experiment_id)
         
         #Create a new "experiment" to record data
         exp_id = mlflow.create_experiment(experiment_name)

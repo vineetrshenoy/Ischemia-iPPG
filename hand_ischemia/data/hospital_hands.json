@@ -1,28 +1,7 @@
-{  
-    "hand-subject1":   {
+{
+    "hand-chi034": {
 
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0416/":{
-            "finger2-distal.h5": 0,
-            "finger2-intermediate.h5": 0,
-            "finger2-metacarpal.h5": 0,
-            "finger2-proximal.h5": 0,
-            "finger3-distal.h5": 0,
-            "finger3-intermediate.h5": 0,
-            "finger3-metacarpal.h5": 0,
-            "finger3-proximal.h5": 0,
-            "finger4-distal.h5": 0,
-            "finger4-intermediate.h5": 0,
-            "finger4-proximal.h5": 0,
-            "finger4-metacarpal.h5": 0,
-            "finger5-distal.h5": 0,
-            "finger5-intermediate.h5": 0,
-            "finger5-metacarpal.h5": 0,
-            "finger5-proximal.h5": 0
-
-        },    
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0417/":{
-            "finger2-metacarpal.h5": 0,
-            "finger2-proximal.h5": 0,
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_034":{
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
             "finger3-metacarpal.h5": 0,
@@ -37,29 +16,13 @@
             "finger5-proximal.h5": 0
 
         }
-    },    
+    },
+    "hand-chi035": {
 
-    "hand-subject2":{
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0418/":{
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_035":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
-            "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
-            "finger3-distal.h5": 0,
-            "finger3-intermediate.h5": 0,
-            "finger3-metacarpal.h5": 0,
-            "finger3-proximal.h5": 0,
-            "finger4-distal.h5": 0,
-            "finger4-intermediate.h5": 0,
-            "finger4-proximal.h5": 0,
-            "finger4-metacarpal.h5": 0,
-            "finger5-distal.h5": 0,
-            "finger5-intermediate.h5": 0,
-            "finger5-metacarpal.h5": 0,
-            "finger5-proximal.h5": 0
-
-        },    
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0419/":{
             "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
@@ -76,14 +39,13 @@
 
         }
     },
+    "hand-chi036": {
 
-    "hand-subject3": {
-
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0421/":{
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_036-1":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
-            "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
             "finger3-metacarpal.h5": 0,
@@ -98,31 +60,11 @@
             "finger5-proximal.h5": 0
 
         },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0422/":{
-            "finger2-metacarpal.h5": 0,
-            "finger3-distal.h5": 0,
-            "finger3-intermediate.h5": 0,
-            "finger3-metacarpal.h5": 0,
-            "finger3-proximal.h5": 0,
-            "finger4-distal.h5": 0,
-            "finger4-intermediate.h5": 0,
-            "finger4-proximal.h5": 0,
-            "finger4-metacarpal.h5": 0,
-            "finger5-distal.h5": 0,
-            "finger5-intermediate.h5": 0,
-            "finger5-metacarpal.h5": 0,
-            "finger5-proximal.h5": 0
-    
-        }        
-
-    },
-    
-    "hand-subject4":{
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0423/":{
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_036-2":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
-            "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
             "finger3-metacarpal.h5": 0,
@@ -136,31 +78,56 @@
             "finger5-metacarpal.h5": 0,
             "finger5-proximal.h5": 0
 
-        },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0424/":{
-            "finger2-metacarpal.h5": 0,
-            "finger3-distal.h5": 0,
-            "finger3-metacarpal.h5": 0,
-            "finger3-proximal.h5": 0,
-            "finger4-distal.h5": 0,
-            "finger4-intermediate.h5": 0,
-            "finger4-proximal.h5": 0,
-            "finger4-metacarpal.h5": 0,
-            "finger5-distal.h5": 0,
-            "finger5-intermediate.h5": 0,
-            "finger5-metacarpal.h5": 0,
-            "finger5-proximal.h5": 0
-    
         }
     },
-    
-    "hand-subject5": {
+    "hand-chi037": {
 
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0425/":{
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_037-1":{
             "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
-            "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 1,
+            "finger5-intermediate.h5": 1,
+            "finger5-metacarpal.h5": 1,
+            "finger5-proximal.h5": 1
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_037-2":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0,
+            "finger5-distal.h5": 1,
+            "finger5-intermediate.h5": 1,
+            "finger5-metacarpal.h5": 1,
+            "finger5-proximal.h5": 1
+
+        }
+    },
+    "hand-chi038": {
+
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_038-1":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
             "finger3-metacarpal.h5": 0,
@@ -175,9 +142,11 @@
             "finger5-proximal.h5": 0
 
         },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0426/":{
-            "finger2-metacarpal.h5": 0,
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_038-2":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
             "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
             "finger3-distal.h5": 0,
             "finger3-intermediate.h5": 0,
             "finger3-metacarpal.h5": 0,
@@ -190,53 +159,112 @@
             "finger5-intermediate.h5": 0,
             "finger5-metacarpal.h5": 0,
             "finger5-proximal.h5": 0
-    
+
         }
+    },
+    "hand-chi039": {
+
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_039-1":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_039-2":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0
+        }
+    },
+    "hand-chi043": {
+
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_043-1":{
+            "finger2-distal.h5": 0,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 1,
+            "finger3-intermediate.h5": 1,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_043-2":{
         
-    },
-    "hand-subject6": {
-
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0428/":{
-            "finger2-distal.h5": 0,
             "finger2-intermediate.h5": 0,
-            "finger2-metacarpal.h5": 0,
             "finger2-proximal.h5": 0,
-            "finger3-distal.h5": 0,
-            "finger3-intermediate.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-intermediate.h5": 1,
             "finger3-metacarpal.h5": 0,
-            "finger3-proximal.h5": 0,
-            "finger4-distal.h5": 0,
-            "finger4-intermediate.h5": 0,
-            "finger4-proximal.h5": 0,
-            "finger4-metacarpal.h5": 0,
-            "finger5-distal.h5": 0,
-            "finger5-intermediate.h5": 0,
-            "finger5-metacarpal.h5": 0,
-            "finger5-proximal.h5": 0
+            "finger3-proximal.h5": 0
+        }
+    },
+    "hand-chi044": {
 
-        },
-        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/IMG_0430/":{
-            "finger2-metacarpal.h5": 0,
-            "finger2-proximal.h5": 0,
-            "finger3-distal.h5": 0,
-            "finger3-intermediate.h5": 0,
-            "finger3-metacarpal.h5": 0,
-            "finger3-proximal.h5": 0,
-            "finger4-distal.h5": 0,
-            "finger4-intermediate.h5": 0,
-            "finger4-proximal.h5": 0,
-            "finger4-metacarpal.h5": 0,
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_044-1":{
+            "finger4-distal.h5": 1,
+            "finger4-intermediate.h5": 1,
+            "finger4-proximal.h5": 1,
+            "finger4-metacarpal.h5": 1,
             "finger5-distal.h5": 0,
             "finger5-intermediate.h5": 0,
             "finger5-metacarpal.h5": 0,
             "finger5-proximal.h5": 0
 
         }
+    },
+    "hand-chi53": {
 
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_053-1":{
+            "finger2-distal.h5": 1,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0
+
+        },
+        "/cis/net/io72a/data/vshenoy/durr_hand/durr_lab_aug2024/h5_files_30fps/chi_053-2":{
+            "finger2-distal.h5": 1,
+            "finger2-intermediate.h5": 0,
+            "finger2-proximal.h5": 0,
+            "finger2-metacarpal.h5": 0,
+            "finger3-distal.h5": 0,
+            "finger3-intermediate.h5": 0,
+            "finger3-metacarpal.h5": 0,
+            "finger3-proximal.h5": 0,
+            "finger4-distal.h5": 0,
+            "finger4-intermediate.h5": 0,
+            "finger4-proximal.h5": 0,
+            "finger4-metacarpal.h5": 0
+        }
     }
-
-        
-        
-        
-
 }
