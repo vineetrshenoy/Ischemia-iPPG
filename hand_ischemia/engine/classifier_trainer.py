@@ -207,6 +207,10 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     #plot_window_ts(self.FPS, zero_mean_out, denoised_ts, outloc, ground_truth)
 
                     # Running the algorithm
+                    #X_abs = torch.abs(X)
+                    #max = torch.max(X_abs, dim=2, keepdim=True)[0]
+                    #X_abs = X_abs / max
+                    #cls_out = cls_model(X_abs)
                     cls_out = cls_model(torch.abs(X))
                 
                 elif self.CLS_MODEL_TYPE == 'TiSc':
@@ -247,7 +251,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             '''
             if i % self.eval_period == 0:
                 logger.warning('Evaluating at epoch {}'.format(i))
-                met = self.test_partition(self, run, model, cls_model, optimizer, scheduler, test_dataloader, i)
+                met, _ = self.test_partition(self, run, model, cls_model, optimizer, scheduler, test_dataloader, i)
                 
                 acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
                 recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
@@ -315,6 +319,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
             tourniquet_train_subdict = dict((k, tourniquet_list[k]) for k in train_tourniquet if k in tourniquet_list)
             train_subdict.update(tourniquet_train_subdict)
+            #train_subdict.update(ubfc_dict)
             
             val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
             tourniquet_val_subdict = dict((k, tourniquet_list[k]) for k in val_tourniquet if k in tourniquet_list)
@@ -390,7 +395,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             
             logger.warning('Finished Training; now testing')
             #Test the model
-            met = self.test_partition(self, run, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.epochs)    
+            met, _ = self.test_partition(self, run, model, cls_model, optimizer, lr_scheduler, test_dataloader, self.epochs)    
             acc, auroc, prec =  met['test_acc'], met['test_auroc'], met['test_precision'],
             recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
             logger.warning('RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
