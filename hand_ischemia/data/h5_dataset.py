@@ -38,7 +38,7 @@ class H5Dataset(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        #self.ts_time_windows = self.ts_time_windows[0:2]
+        self.ts_time_windows = self.ts_time_windows[0:200]
         x = 5
     
     @staticmethod
@@ -107,13 +107,16 @@ class H5Dataset(Dataset):
                 #Z = Hand_Ischemia_Dataset._process_ppg_mat_window(
                 #    self.b, self.a, ppg_mat_window)
 
-                cls_value = torch.zeros((2,))
+                cls_value = torch.zeros((1,))
                 #cls_value[0,1] = 0 if label == 0 else 0
+                '''
                 if label == 0:
                     cls_value[0] = 1
                 else:
                     cls_value[1] = 1
-                
+                '''
+                if label == 1:
+                    cls_value[0] = 1
                 #signal = Z.repeat(5, 1)
                 #assert signal.shape[0] == 5
                 #ts_time_windows.append((signal, cls_value))
@@ -163,9 +166,9 @@ class H5Dataset(Dataset):
         
         for i in range(0, N):
             class_labels = ts_time_windows[i][3]
-            if class_labels[0] == 1:
+            if class_labels[0] == 0:
                 perfuse += 1
-            elif class_labels[1] == 1:
+            elif class_labels[0] == 1:
                 ischemic += 1
         
         return perfuse, ischemic
@@ -275,7 +278,7 @@ class H5DatasetTestHospital(Dataset):
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
         
         #Debug only
-        #self.ts_time_windows = self.ts_time_windows[0:20]
+        self.ts_time_windows = self.ts_time_windows[0:20]
         x = 5
 
     def __len__(self):

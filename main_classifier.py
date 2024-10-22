@@ -95,4 +95,4 @@ if __name__ == '__main__':
         experiment_name = 'CLS-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
         experiment_id = mlflow.create_experiment(experiment_name)
         mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
-        #main(0, args, world_size)
+        #main(0, args, world_size, experiment_id)

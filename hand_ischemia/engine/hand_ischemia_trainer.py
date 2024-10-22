@@ -272,7 +272,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
         with open('/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/ubfc_only.json', 'r') as f:
             ubfc_dict = json.load(f)
         keys = np.array([*train_list])
-        kf = KFold(9, shuffle=False)
+        kf = KFold(5, shuffle=False)
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         for idx, (train, val) in enumerate(kf.split(keys)):
@@ -288,7 +288,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             # Update training set with UBFC data
             train_subdict.update(ubfc_dict) 
             test_subject = keys[val][0]
-            logger.info('Training Fold {}'.format(test_subject))
+            logger.info('Training Fold {}'.format(idx))
 
             
             # Build dataset
@@ -319,7 +319,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Create experiment and log training parameters
-            run_name = '{}'.format(test_subject)
+            run_name = 'split{}'.format(idx)
             config_dictionary = dict(yaml=self.cfg)
             run = None
             if self.rank == 0:
@@ -354,7 +354,7 @@ class Hand_Ischemia_Trainer(SimpleTrainer):
             ## Save the Model
             out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, test_subject)
             os.makedirs(out_dir, exist_ok=True)
-            model_name = 'model_{}.pth'.format(test_subject)
+            model_name = 'model_final.pth'
             
             out_path = os.path.join(out_dir, model_name)
             torch.save({'model_state_dict': model.module.state_dict(),
