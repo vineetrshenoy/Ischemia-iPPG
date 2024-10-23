@@ -143,15 +143,15 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             pred_class = 'ischemic' if pred_class.item() == 1 else 'perfuse'
             gt_class = 'ischemic' if gt_class.item() == 1 else 'perfuse'
             
-            #if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
-            #    #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
-            #    #if iter % 10 == 0: #Plot only every tenth
-            #    denoised_ts = zero_mean_out.detach().cpu().numpy()
-            #    denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
-            #    denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
-            #    if self.rank == 0:
-            #        plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class, cls_out)
-            #        x = 5
+            if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
+                #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
+                #if iter % 10 == 0: #Plot only every tenth
+                denoised_ts = zero_mean_out.detach().cpu().numpy()
+                denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
+                denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
+                if self.rank == 0:
+                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class, cls_out)
+                    x = 5
             
             ###
         metrics = self.compute_torchmetrics(epoch)

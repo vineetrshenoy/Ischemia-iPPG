@@ -143,7 +143,7 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
 
             # Load checkpoint if it exists
             checkpoint_loc = os.path.join(artifact_loc, 'model_final.pth'.format(val_subject))
-            cls_checkpoint_loc = os.path.join(cls_artifact_loc, 'clsmodel_final.pth')
+            cls_checkpoint_loc = os.path.join(cls_artifact_loc, 'clsmodel_final2.pth')
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
                 model.load_state_dict(checkpoint['model_state_dict'])
@@ -155,11 +155,11 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
             
             #model.load_state_dict(checkpoint['model_state_dict'])
             model, cls_model = model.to(self.device), cls_model.to(self.device)
-            logger.info('Testing subject {}'.format(val_subject))
+            logger.info('Testing split{}'.format(idx))
 
             
             # Create experiment and log training parameters
-            run_name = '{}'.format(val_subject)
+            run_name = 'split{}'.format(idx)
             mlflow.start_run(experiment_id=curr_exp_id,
                              run_name=run_name, nested=True)
             self.log_config_dict(self.cfg)
@@ -184,7 +184,7 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         
         metric_caulator = SimpleTrainer(self.cfg)
         cls_out_all, cls_label_all = torch.stack(cls_out_all), torch.stack(cls_label_all) 
-        pred_class_all, gt_class_all = torch.stack(pred_class_all), torch.stack(gt_class_all) 
+        pred_class_all, gt_class_all = torch.squeeze(torch.stack(pred_class_all)), torch.squeeze(torch.stack(gt_class_all))
         metric_caulator.update_torchmetrics(cls_out_all, cls_label_all, pred_class_all, gt_class_all, mode='last')
         met = metric_caulator.compute_torchmetrics(self.epochs)
         
