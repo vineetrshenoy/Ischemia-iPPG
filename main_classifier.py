@@ -16,7 +16,7 @@ import os
 
 #mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
-def ddp_setup(rank: int, world_size: int):
+def  ddp_setup(rank: int, world_size: int):
     """
     Args:
         rank: Unique identifier of each process

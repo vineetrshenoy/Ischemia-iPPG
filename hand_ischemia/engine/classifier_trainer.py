@@ -44,10 +44,10 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         self.TIME_WINDOW_SEC = cfg.TIME_SCALE_PPG.TIME_WINDOW_SEC
         
         self.rank = gpu_id
-        if torch.cuda.is_available():
-            self.device = torch.device('cuda')
-        else:
-            self.device = torch.device('cpu')
+        #if torch.cuda.is_available():
+        #    self.device = torch.device('cuda')
+        #else:
+        #    self.device = torch.device('cpu')
         
         self.USE_DENOISER = cfg.TIME_SCALE_PPG.USE_DENOISER
         self.CLS_MODEL_TYPE = cfg.TIME_SCALE_PPG.CLS_MODEL_TYPE
@@ -59,7 +59,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         self.PLOT_INPUT_OUTPUT = cfg.TEST.PLOT_INPUT_OUTPUT
         self.PLOT_LAST = cfg.TEST.PLOT_LAST
         self.cls_loss = torch.nn.BCEWithLogitsLoss()
-        self.hann_window = torch.hann_window(300).to(self.device)
+        self.hann_window = torch.hann_window(300).to(self.rank)
         #self.spectrogram = torchaudio.transforms.Spectrogram(n_fft=300, power=1,
         #                          normalized=True, window_fn=self.hann_window)
         self.eps = 1e-6
@@ -127,28 +127,31 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
                     cls_out = cls_model(zero_mean_out)
             
             #logger.info('out shape{} ; label shape {}'.format(cls_out.shape, cls_label.shape))
-            loss = self.cls_loss(cls_out, cls_label)
-            test_loss.append(loss.detach().cpu().numpy().item())
+            #logger.info(cls_out)
+            #loss = self.cls_loss(cls_out, cls_label)
+            #test_loss.append(loss.detach().cpu().numpy().item())
             
-            cls_out = F.softmax(cls_out)
-            pred_class, gt_class = torch.argmax(cls_out), torch.argmax(cls_label)
+            cls_out = torch.nn.functional.sigmoid(cls_out)
+            pred_class, gt_class = torch.round(cls_out), cls_label
+            pred_class, gt_class = pred_class[0].to(torch.int32), gt_class[0].to(torch.int32)
+            logger.info('cls_out {}; cls_label {}; pred_class {}; gt_class {}'.format(cls_out, cls_label, pred_class, gt_class))
             self.update_torchmetrics(cls_out, cls_label, pred_class, gt_class)
             cls_out_all.append(cls_out), cls_label_all.append(cls_label)
             pred_class_all.append(pred_class), gt_class_all.append(gt_class)
             #pred_labels.append(pred_class), gt_labels.append(gt_class)
             #pred_vector.append(cls_out), gt_vector.append(cls_label)
-            pred_class = 'ischemic' if pred_class == 1 else 'perfuse'
-            gt_class = 'ischemic' if gt_class == 1 else 'perfuse'
+            pred_class = 'ischemic' if pred_class.item() == 1 else 'perfuse'
+            gt_class = 'ischemic' if gt_class.item() == 1 else 'perfuse'
             
-            if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
-                #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
-                #if iter % 10 == 0: #Plot only every tenth
-                denoised_ts = zero_mean_out.detach().cpu().numpy()
-                denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
-                denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
-                if self.rank == 0:
-                    plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class, cls_out)
-                    x = 5
+            #if self.PLOT_INPUT_OUTPUT and epoch == self.epochs:
+            #    #plot_test_results(self.FPS, time_series, window_label, epoch, gt_class, pred_class)
+            #    #if iter % 10 == 0: #Plot only every tenth
+            #    denoised_ts = zero_mean_out.detach().cpu().numpy()
+            #    denoised_ts = H5Dataset.normalize_filter_gt(self, denoised_ts[0, 0, :], self.FPS)
+            #    denoised_ts = np.expand_dims(np.expand_dims(denoised_ts, axis=0), axis=0)
+            #    if self.rank == 0:
+            #        plot_window_physnet(run, self.FPS, ground_truth, denoised_ts, window_label, epoch, gt_class, pred_class, cls_out)
+            #        x = 5
             
             ###
         metrics = self.compute_torchmetrics(epoch)
@@ -425,10 +428,10 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             ## Save the Model
             out_dir = os.path.join(self.cfg.OUTPUT.OUTPUT_DIR, val_subject)
             os.makedirs(out_dir, exist_ok=True)
-            model_name = 'clsmodel_{}.pth'.format(val_subject)
+            model_name = 'clsmodel_final.pth'
             
             out_path = os.path.join(out_dir, model_name)
-            torch.save({'model_state_dict': cls_model.module.state_dict(),
+            torch.save({'model_state_dict': cls_model.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict()}, out_path)
             mlflow.log_artifacts(out_dir)
 
