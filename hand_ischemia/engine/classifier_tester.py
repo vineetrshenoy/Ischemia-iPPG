@@ -79,11 +79,11 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         cls_out_all, cls_label_all, pred_class_all, gt_class_all = [], [], [], []
-        for idx, (train, val) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
+        for idx, (perf_keys, tourn_keys) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
             
             # Generating the one-versus-all partition of subjects for Hand Surgeon
-            train_per, train_tourn = train
-            val_per, val_tourn = val
+            train_per, val_per = perf_keys
+            train_tourn, val_tourn = tourn_keys
             
             # Generating the one-versus-all partition of subjects for Hand Surgeon
             train_subjects = keys[train_per]

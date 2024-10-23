@@ -134,7 +134,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             cls_out = torch.nn.functional.sigmoid(cls_out)
             pred_class, gt_class = torch.round(cls_out), cls_label
             pred_class, gt_class = pred_class[0].to(torch.int32), gt_class[0].to(torch.int32)
-            logger.info('cls_out {}; cls_label {}; pred_class {}; gt_class {}'.format(cls_out, cls_label, pred_class, gt_class))
+            #logger.info('cls_out {}; cls_label {}; pred_class {}; gt_class {}'.format(cls_out, cls_label, pred_class, gt_class))
             self.update_torchmetrics(cls_out, cls_label, pred_class, gt_class)
             cls_out_all.append(cls_out), cls_label_all.append(cls_label)
             pred_class_all.append(pred_class), gt_class_all.append(gt_class)
@@ -315,10 +315,10 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         kf = KFold(5, shuffle=False)
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
-        for idx, (train, val) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
+        for idx, (perf_keys, tourn_keys) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
             
-            train_per, train_tourn = train
-            val_per, val_tourn = val
+            train_per, val_per = perf_keys
+            train_tourn, val_tourn = tourn_keys
             
             # Generating the one-versus-all partition of subjects for Hand Surgeon
             train_subjects = keys[train_per]
@@ -331,8 +331,8 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             train_tourniquet = tourniquet_keys[train_tourn]
             val_tourniquet = tourniquet_keys[val_tourn]
             
-            splitname = 'split{}'.format(idx)
-            query = "tag.mlflow.runName = '{}'".format(splitname)
+            
+            query = "tag.mlflow.runName = 'split{}'".format(idx)
             sub_exp = mlflow.search_runs([experiment_id], filter_string=query, output_format='list')[0]
         
             train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
@@ -366,7 +366,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             #    train_dataset, batch_size=self.batch_size, drop_last=True, shuffle=True)
             test_dataloader = DataLoader(
                 val_dataset, batch_size=1, shuffle=False)
-        
+            
         
             # Build model
             model, cls_model = build_model(self.cfg)
@@ -438,6 +438,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
 
             # End the run
             mlflow.end_run()
+            
 
         #metrics = self._compute_rmse_and_pte6(HR_gt_full, HR_nn_full)
         #rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
