@@ -357,7 +357,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             self.cfg.INPUT.TEST_ISCHEMIC = val_dataset.num_ischemic
             self.cfg.INPUT.TEST_PERFUSE = val_dataset.num_perfuse
             
-            pos_weight = torch.tensor([train_dataset.num_ischemic/train_dataset.num_perfuse]).to(self.rank)
+            pos_weight = torch.tensor([train_dataset.num_perfuse/train_dataset.num_ischemic]).to(self.rank)
             self.cls_loss = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
             ## Build dataloader
             train_dataloader = DataLoader(
@@ -371,16 +371,16 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             # Build model
             model, cls_model = build_model(self.cfg)
             model, cls_model  = model.to(self.rank), cls_model.to(self.rank)
-            #model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-            #cls_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(cls_model)
-            #model, cls_model = DDP(model, device_ids=[self.rank]), DDP(cls_model, device_ids=[self.rank])
+            model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            cls_model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(cls_model)
+            model, cls_model = DDP(model, device_ids=[self.rank]), DDP(cls_model, device_ids=[self.rank])
             
             # Load checkpoint if it exists
             artifact_loc = sub_exp.info.artifact_uri.replace('file://', '')
             checkpoint_loc = os.path.join(artifact_loc, 'model_final.pth')
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
-                model.load_state_dict(checkpoint['model_state_dict'])
+                model.module.load_state_dict(checkpoint['model_state_dict'])
             except:
                 raise Exception
             
