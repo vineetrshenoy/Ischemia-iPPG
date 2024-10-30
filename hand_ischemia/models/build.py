@@ -14,6 +14,7 @@ from hand_ischemia.models.network import ResNetUNet
 from complexPyTorch.complexFunctions import complex_relu
 from complexPyTorch.complexLayers import ComplexReLU, ComplexMaxPool1d, NaiveComplexBatchNorm1d
 from hand_ischemia.models import PhysNet
+import torchvision
 __all__ = ['build_model']
 
 
@@ -58,8 +59,13 @@ def build_model(cfg):
         classifier = TiscMlpN([[2,256],100,50,20,10,2], length_input=256, tisc_initialization='white')
     elif cfg.TIME_SCALE_PPG.CLS_MODEL_TYPE == 'SPEC':
         classifier = Spectrum_CLS()
-        
-    classifier = classifier.apply(weights_init)
+        classifier = torchvision.models.resnet18(weights='DEFAULT')
+        classifier.fc = torch.nn.Sequential(
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(512, 1)
+            #torch.nn.Sigmoid()
+        )
+    #classifier = classifier.apply(weights_init)
     
     return model, classifier
 

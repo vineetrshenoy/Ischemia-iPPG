@@ -53,29 +53,66 @@ class Hand_Ischemia_Tester(SimpleTrainer):
 
 
 
-    def test(self, experiment_id, curr_exp_id):
+    def test(self, args, experiment_id, curr_exp_id):
         """The main training loop for the partition trainer
 
         Args:
             experiment_id (_type_): The MLFlow experiment ID under which to list training runs
         """
-        with open(self.test_json_path, 'r') as f:
-            test_list = json.load(f)
+        with open(self.train_json_path, 'r') as f:
+            train_list = json.load(f)
+        with open('/cis/home/vshenoy/durr_hand/Physnet_Ischemia/hand_ischemia/data/tourniquet_ischemia.json', 'r') as f:
+            tourniquet_list = json.load(f)
+        with open('/cis/net/r22a/data/vshenoy/durr_hand/model_code/physnet_ischemia/hand_ischemia/data/ubfc_only.json', 'r') as f:
+            ubfc_dict = json.load(f)
+        keys = np.array([*train_list])
+        tourniquet_keys = np.array([*tourniquet_list])
 
         HR_nn_full, HR_gt_full = [], []
-        sub_experiments = mlflow.search_runs([experiment_id], output_format='list')
+
         
+        kf = KFold(5, shuffle=False)
+        HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
-        for sub_exp in sub_experiments:
+        cls_out_all, cls_label_all, pred_class_all, gt_class_all = [], [], [], []
+        for idx, (perf_keys, tourn_keys) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
+            #if idx != 1:
+            #    continue
+            # Generating the one-versus-all partition of subjects for Hand Surgeon
+            train_per, val_per = perf_keys
             
-            test_subject = sub_exp.data.tags['mlflow.runName']
-            if test_subject.split('-')[0] != 'hand':
-                continue            
             
-            val_subdict = test_list
-            if self.TEST_CV:
-                val_subdict = {test_subject: test_list[test_subject]}
+            # Generating the one-versus-all partition of subjects for Hand Surgeon
+            train_subjects = keys[train_per]
+            val_subjects = keys[val_per]
+            val_subject = val_subjects[0]
+                      
+        
+            query = "tag.mlflow.runName = 'split{}'".format(idx)
+            sub_exp = mlflow.search_runs([args.experiment_id], filter_string=query, output_format='list')[0]
             
+            if args.test_CV:
+                            
+                # Generating the one-versus-all partition of subjects for Hand Surgeon
+                train_subjects = keys[train_per]
+                val_subjects = keys[val_per]
+                
+                val_subdict = dict((k, train_list[k]) for k in val_subjects if k in train_list)
+                val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            else: 
+                with open(self.test_json_path, 'r') as f:
+                    val_subdict = json.load(f)
+                val_dataset = H5DatasetTest(self.cfg, val_subdict)
+            # Build dataset
+            self.cfg.INPUT.TEST_ISCHEMIC = val_dataset.num_ischemic
+            self.cfg.INPUT.TEST_PERFUSE = val_dataset.num_perfuse
+            
+            logger.info('Test dataset size: {}'.format(len(val_dataset)))
+
+            
+            ## Build dataloader
+            val_dataloader = DataLoader(
+                val_dataset, batch_size=1, shuffle=False)
             #if test_subject != 'F018':
             #    continue
             artifact_loc = sub_exp.info.artifact_uri.replace('file://', '')
@@ -86,48 +123,39 @@ class Hand_Ischemia_Tester(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Load checkpoint if it exists
-            checkpoint_loc = os.path.join(artifact_loc, 'model_{}.pth'.format(test_subject))
+            checkpoint_loc = os.path.join(artifact_loc, 'model_final.pth'.format(val_subject))
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
                 model.load_state_dict(checkpoint['model_state_dict'])
+                
             except:
                 raise Exception
             
             #model.load_state_dict(checkpoint['model_state_dict'])
-            model = model.to(self.device)
-            logger.info('Testing subject {}'.format(test_subject))
-
-            # Build dataset
-            val_dataset = H5DatasetTest(self.cfg, val_subdict)
-            logger.info('Test dataset size: {}'.format(len(val_dataset)))
-            
-            #Update CFG
-            self.cfg.INPUT.TEST_ISCHEMIC = val_dataset.num_ischemic
-            self.cfg.INPUT.TEST_PERFUSE = val_dataset.num_perfuse
-            #self.PLOT_INPUT_OUTPUT = False
-
-            ##Build dataloader
-            val_dataloader = DataLoader(
-                val_dataset, batch_size=1, shuffle=False)
+            model, cls_model = model.to(self.device), cls_model.to(self.device)
+            logger.info('Testing split{}'.format(idx))
 
     
 
             # Create experiment and log training parameters
-            run_name = '{}'.format(test_subject)
+            run_name = 'split{}'.format(idx)
             mlflow.start_run(experiment_id=curr_exp_id,
                              run_name=run_name, nested=True)
             self.log_config_dict(self.cfg)
 
             
             # Test the model
-            HR_nn, HR_gt = Hand_Ischemia_Trainer.test_partition(self, None, model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
+            with torch.no_grad():
+                HR_nn, HR_gt = Hand_Ischemia_Trainer.test_partition(self, None, model, None, optimizer, lr_scheduler, val_dataloader, self.cfg.DENOISER.EPOCHS)
             
+            if idx == 0:
+                np.savez('all_hrs.npz', emp=HR_nn, gt=HR_gt)
             HR_nn_full = HR_nn_full + HR_nn
             HR_gt_full = HR_gt_full + HR_gt
             
             metrics = self._compute_rmse_and_pte6(HR_gt, HR_nn)
             rmse, mae, pte6 = metrics['rmse'], metrics['mae'], metrics['pte6']
-            logger.warning('Hand Ischemia results Subject {}: MAE =  {}; RMSE = {}; PTE6 = {}'.format(test_subject,  mae, rmse, pte6))
+            logger.warning('Hand Ischemia results Split {}: MAE =  {}; RMSE = {}; PTE6 = {}'.format(idx,  mae, rmse, pte6))
     
             mlflow.log_metrics(metrics, step=self.epochs)
 
@@ -141,3 +169,7 @@ class Hand_Ischemia_Tester(SimpleTrainer):
         logger.warning('Hand Ischemia Results: MAE =  {}; RMSE = {}; PTE6 = {}'.format( mae, rmse, pte6))
         mlflow.log_metrics(metrics, step=self.epochs)
 
+        np.savez('all_hrs.npz', emp=HR_nn_full, gt=HR_gt_full)
+        
+    
+    

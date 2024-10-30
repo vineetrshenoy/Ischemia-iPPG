@@ -16,7 +16,7 @@ import os
 
 #mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
-def ddp_setup(rank: int, world_size: int):
+def  ddp_setup(rank: int, world_size: int):
     """
     Args:
         rank: Unique identifier of each process
@@ -95,4 +95,4 @@ if __name__ == '__main__':
         experiment_name = 'CLS-{}-{}'.format(time.strftime("%m-%d-%H:%M:%S"), args.experiment_id)
         experiment_id = mlflow.create_experiment(experiment_name)
         mp.spawn(main, args=(args, world_size, experiment_id), nprocs=world_size)
-        #main(0, args, world_size)
+        #main(0, args, world_size, experiment_id)

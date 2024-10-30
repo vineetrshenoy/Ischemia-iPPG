@@ -43,11 +43,14 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         self.cls_loss = torch.nn.BCELoss()
         self.eps = 1e-6
         self.rank = 0
+        
 
         if torch.cuda.is_available():
             self.device = torch.device('cuda')
         else:
             self.device = torch.device('cpu')
+        
+        self.hann_window = torch.hann_window(300).to(self.device)
 
         logger.info('Inside Ischemia_Classifier_Tester')
     
@@ -72,33 +75,40 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         HR_nn_full, HR_gt_full = [], []
 
         
-        kf = KFold(6, shuffle=False)
+        kf = KFold(5, shuffle=False)
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         cls_out_all, cls_label_all, pred_class_all, gt_class_all = [], [], [], []
-        for idx, (train, val) in enumerate(kf.split(keys)):
+        for idx, (perf_keys, tourn_keys) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
+            #if idx != 1:
+            #    continue
+            # Generating the one-versus-all partition of subjects for Hand Surgeon
+            train_per, val_per = perf_keys
+            train_tourn, val_tourn = tourn_keys
             
             # Generating the one-versus-all partition of subjects for Hand Surgeon
-            train_subjects = keys[train]
-            val_subjects = keys[val]
+            train_subjects = keys[train_per]
+            val_subjects = keys[val_per]
             val_subject = val_subjects[0]
             
-            train_tourniquet = tourniquet_keys[train]
-            val_tourniquet = tourniquet_keys[val]
-            tourniquet_val_subject = val_tourniquet[0]
+            #if val_subject != 'hand-subject6':
+            #    continue
             
-            query = "tag.mlflow.runName = '{}'".format(val_subject)
+            train_tourniquet = tourniquet_keys[train_tourn]
+            val_tourniquet = tourniquet_keys[val_tourn]
+            
+            query = "tag.mlflow.runName = 'split{}'".format(idx)
             sub_exp = mlflow.search_runs([args.experiment_id], filter_string=query, output_format='list')[0]
             cls_sub_exp = mlflow.search_runs([args.cls_experiment_id], filter_string=query, output_format='list')[0]
             
             if args.test_CV:
                             
                 # Generating the one-versus-all partition of subjects for Hand Surgeon
-                train_subjects = keys[train]
-                val_subjects = keys[val]
+                train_subjects = keys[train_per]
+                val_subjects = keys[val_per]
                 
-                train_tourniquet = tourniquet_keys[train]
-                val_tourniquet = tourniquet_keys[val]
+                train_tourniquet = tourniquet_keys[train_tourn]
+                val_tourniquet = tourniquet_keys[val_tourn]
                 
                 train_subdict = dict((k, train_list[k]) for k in train_subjects if k in train_list)
                 tourniquet_train_subdict = dict((k, tourniquet_list[k]) for k in train_tourniquet if k in tourniquet_list)
@@ -133,8 +143,11 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
             lr_scheduler = build_lr_scheduler(self.cfg, optimizer)
 
             # Load checkpoint if it exists
-            checkpoint_loc = os.path.join(artifact_loc, 'model_{}.pth'.format(val_subject))
-            cls_checkpoint_loc = os.path.join(cls_artifact_loc, 'clsmodel_{}.pth'.format(val_subject))
+            checkpoint_loc = os.path.join(artifact_loc, 'model_final.pth'.format(val_subject))
+            cls_checkpoint_loc = os.path.join(cls_artifact_loc, 'clsmodel_final2.pth')
+            #if idx == 1:
+            #    cls_checkpoint_loc = '/cis/home/vshenoy/durr_hand/Physnet_Ischemia/mlruns/597715583670072619/8fc4025667ac43c39ffc75a163824837/artifacts/clsmodel_final.pth'
+            #checkpoint_loc = '/cis/home/vshenoy/durr_hand/Physnet_Ischemia/mlruns/632201314565448283/347bc70878484e348837900755aeffa9/artifacts/model_final.pth'
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
                 model.load_state_dict(checkpoint['model_state_dict'])
@@ -146,11 +159,11 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
             
             #model.load_state_dict(checkpoint['model_state_dict'])
             model, cls_model = model.to(self.device), cls_model.to(self.device)
-            logger.info('Testing subject {}'.format(val_subject))
+            logger.info('Testing split{}'.format(idx))
 
             
             # Create experiment and log training parameters
-            run_name = '{}'.format(val_subject)
+            run_name = 'split{}'.format(idx)
             mlflow.start_run(experiment_id=curr_exp_id,
                              run_name=run_name, nested=True)
             self.log_config_dict(self.cfg)
@@ -175,7 +188,7 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         
         metric_caulator = SimpleTrainer(self.cfg)
         cls_out_all, cls_label_all = torch.stack(cls_out_all), torch.stack(cls_label_all) 
-        pred_class_all, gt_class_all = torch.stack(pred_class_all), torch.stack(gt_class_all) 
+        pred_class_all, gt_class_all = torch.squeeze(torch.stack(pred_class_all)), torch.squeeze(torch.stack(gt_class_all))
         metric_caulator.update_torchmetrics(cls_out_all, cls_label_all, pred_class_all, gt_class_all, mode='last')
         met = metric_caulator.compute_torchmetrics(self.epochs)
         
@@ -183,3 +196,9 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
         logger.warning('OVERALL RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
         mlflow.log_metrics(met, step=self.epochs)
+        
+        
+
+'''
+python -m pdb main_classifier.py --config-file config/classifier_training.yaml --experiment_id 771220913384388016 --cls_experiment_id 295898773480163007 --test_only --test_CV
+'''
