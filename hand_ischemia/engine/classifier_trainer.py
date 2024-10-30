@@ -316,6 +316,9 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
         HR_nn_full, HR_gt_full = [], []
         # Generates a partition of the data
         for idx, (perf_keys, tourn_keys) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
+
+            if idx != 1:
+                continue
             
             train_per, val_per = perf_keys
             train_tourn, val_tourn = tourn_keys
@@ -431,7 +434,7 @@ class Ischemia_Classifier_Trainer(SimpleTrainer):
             model_name = 'clsmodel_final.pth'
             
             out_path = os.path.join(out_dir, model_name)
-            torch.save({'model_state_dict': cls_model.state_dict(),
+            torch.save({'model_state_dict': cls_model.module.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict()}, out_path)
             mlflow.log_artifacts(out_dir)
 

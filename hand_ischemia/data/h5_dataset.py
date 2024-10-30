@@ -36,7 +36,11 @@ class H5Dataset(Dataset):
         #    self.ts_list = json.load(f)
         self.ts_time_windows, self.time_window_label = self._get_timeseries(self, data_dict)
         self.num_perfuse, self.num_ischemic = H5Dataset._count_class_numbers(self.ts_time_windows)
+        #idx = np.arange(0, len(self.ts_time_windows))
+        #np.random.shuffle(idx)
+        from sklearn.utils import shuffle
         
+        self.ts_time_windows, self.time_window_label = shuffle(self.ts_time_windows, self.time_window_label)
         #Debug only
         #self.ts_time_windows = self.ts_time_windows[0:200]
         x = 5

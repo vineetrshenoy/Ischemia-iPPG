@@ -80,7 +80,8 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         # Generates a partition of the data
         cls_out_all, cls_label_all, pred_class_all, gt_class_all = [], [], [], []
         for idx, (perf_keys, tourn_keys) in enumerate(zip(kf.split(keys), kf.split(tourniquet_keys))):
-            
+            #if idx != 1:
+            #    continue
             # Generating the one-versus-all partition of subjects for Hand Surgeon
             train_per, val_per = perf_keys
             train_tourn, val_tourn = tourn_keys
@@ -144,6 +145,9 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
             # Load checkpoint if it exists
             checkpoint_loc = os.path.join(artifact_loc, 'model_final.pth'.format(val_subject))
             cls_checkpoint_loc = os.path.join(cls_artifact_loc, 'clsmodel_final2.pth')
+            if idx == 1:
+                cls_checkpoint_loc = '/cis/home/vshenoy/durr_hand/Physnet_Ischemia/mlruns/597715583670072619/8fc4025667ac43c39ffc75a163824837/artifacts/clsmodel_final.pth'
+            #checkpoint_loc = '/cis/home/vshenoy/durr_hand/Physnet_Ischemia/mlruns/632201314565448283/347bc70878484e348837900755aeffa9/artifacts/model_final.pth'
             try:
                 checkpoint = torch.load(checkpoint_loc, map_location=self.device)
                 model.load_state_dict(checkpoint['model_state_dict'])
@@ -192,3 +196,9 @@ class Ischemia_Classifier_Tester(SimpleTrainer):
         recall, f1, conf = met['test_recall'], met['test_f1score'], met['test_confusion']
         logger.warning('OVERALL RESULTS: acc={}; auroc={}; prec={}; recall={}; f1={};'.format(acc, auroc, recall, prec, f1))
         mlflow.log_metrics(met, step=self.epochs)
+        
+        
+
+'''
+python -m pdb main_classifier.py --config-file config/classifier_training.yaml --experiment_id 771220913384388016 --cls_experiment_id 295898773480163007 --test_only --test_CV
+'''
