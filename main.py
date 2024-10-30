@@ -51,7 +51,7 @@ def main(rank, args, world_size, experiment_id):
         
         logger.info('Inside Tester')
         #Use old experiment id to retriev runs
-        tester.test(args.experiment_id, exp_id)
+        tester.test(args, args.experiment_id, exp_id)
         
         mlflow.end_run()
         
